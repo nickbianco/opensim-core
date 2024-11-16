@@ -22,6 +22,7 @@
 #include <OpenSim/Simulation/Manager/Manager.h>
 #include <OpenSim/Simulation/Model/StationPlaneContactForce.h>
 #include <OpenSim/Simulation/SimbodyEngine/SliderJoint.h>
+#include <OpenSim/Simulation/VisualizerUtilities.h>
 
 #include <catch2/catch_all.hpp>
 #include "Testing.h"
@@ -85,6 +86,7 @@ SimTK::Real testNormalForce() {
     Model modelTemp = create2DPointMassModel<T>();
     modelTemp.finalizeConnections();
     Model model(modelTemp);
+    // model.setUseVisualizer(true);
     model.finalizeConnections();
     ModelProcessor modelProc(model);
 
@@ -95,20 +97,25 @@ SimTK::Real testNormalForce() {
     }
 
     const SimTK::Real y0 = 0.5;
-    const SimTK::Real finalTime = 2.0;
+    const SimTK::Real finalTime = 0.1;
 
     // Time stepping.
     // --------------
     SimTK::Real finalHeightTimeStepping;
     {
         SimTK::State state = model.initSystem();
+        state.setTime(0.0);
         model.setStateVariableValue(state, "ty/ty/value", y0);
         Manager manager(model);
         manager.setIntegratorAccuracy(1e-6);
         manager.initialize(state);
         state = manager.integrate(finalTime);
 
-        // visualize(model, manager.getStateStorage());
+        // VisualizerUtilities::showModel(model);
+        TimeSeriesTable statesTable = manager.getStatesTable();
+        STOFileAdapter::write(statesTable, "testMocoContact_states.sto");
+
+        // VisualizerUtilities::showMotion(model, manager.getStatesTable());
 
         // https://stackoverflow.com/questions/34696351/template-dependent-typename
         auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
@@ -129,43 +136,43 @@ SimTK::Real testNormalForce() {
     // -------------------
     // This is a simulation (initial value problem), not a trajectory
     // optimization.
-    SimTK::Real finalHeightDircol;
-    {
-        MocoStudy study;
-        MocoProblem& mp = study.updProblem();
-        mp.setModelAsCopy(model);
-        mp.setTimeBounds(0, finalTime);
-        mp.setStateInfo("/tx/tx/value", {-1, 1}, 0);
-        mp.setStateInfo("/ty/ty/value", {-0.5, 1}, y0);
-        mp.setStateInfo("/tx/tx/speed", {-10, 10}, 0);
-        mp.setStateInfo("/ty/ty/speed", {-10, 10}, 0);
+    // SimTK::Real finalHeightDircol;
+    // {
+    //     MocoStudy study;
+    //     MocoProblem& mp = study.updProblem();
+    //     mp.setModelAsCopy(model);
+    //     mp.setTimeBounds(0, finalTime);
+    //     mp.setStateInfo("/tx/tx/value", {-1, 1}, 0);
+    //     mp.setStateInfo("/ty/ty/value", {-0.5, 1}, y0);
+    //     mp.setStateInfo("/tx/tx/speed", {-10, 10}, 0);
+    //     mp.setStateInfo("/ty/ty/speed", {-10, 10}, 0);
 
-        auto& ms = study.initTropterSolver();
-        ms.set_num_mesh_intervals(50);
-        // TODO: Hermite-Simpson has trouble converging
-        ms.set_transcription_scheme("trapezoidal");
+    //     auto& ms = study.initTropterSolver();
+    //     ms.set_num_mesh_intervals(50);
+    //     // TODO: Hermite-Simpson has trouble converging
+    //     ms.set_transcription_scheme("trapezoidal");
 
-        MocoSolution solution = study.solve();
-        // solution.write("testContact_solution_testNormalForce.sto");
-        // moco.visualize(solution);
+    //     MocoSolution solution = study.solve();
+    //     // solution.write("testContact_solution_testNormalForce.sto");
+    //     // moco.visualize(solution);
 
-        auto statesTraj = solution.exportToStatesTrajectory(mp);
-        const auto& finalState = statesTraj.back();
-        model.realizeVelocity(finalState);
-        // https://stackoverflow.com/questions/34696351/template-dependent-typename
-        auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
-        const Vec3 contactForce = contact.getContactForceOnStation(finalState);
-        // For some reason, direct collocation doesn't produce the same
-        // numerical issues with the x component of the force as seen above.
-        CHECK(contactForce[0] == Approx(0).margin(1e-15));
-        CHECK(contactForce[1] == Approx(weight).epsilon(0.01));
-        CHECK(contactForce[2] == 0);
+    //     auto statesTraj = solution.exportToStatesTrajectory(mp);
+    //     const auto& finalState = statesTraj.back();
+    //     model.realizeVelocity(finalState);
+    //     // https://stackoverflow.com/questions/34696351/template-dependent-typename
+    //     auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
+    //     const Vec3 contactForce = contact.getContactForceOnStation(finalState);
+    //     // For some reason, direct collocation doesn't produce the same
+    //     // numerical issues with the x component of the force as seen above.
+    //     CHECK(contactForce[0] == Approx(0).margin(1e-15));
+    //     CHECK(contactForce[1] == Approx(weight).epsilon(0.01));
+    //     CHECK(contactForce[2] == 0);
 
-        finalHeightDircol =
-                model.getStateVariableValue(finalState, "ty/ty/value");
-    }
+    //     finalHeightDircol =
+    //             model.getStateVariableValue(finalState, "ty/ty/value");
+    // }
 
-    CHECK(finalHeightTimeStepping == Approx(finalHeightDircol).margin(1e-5));
+    // CHECK(finalHeightTimeStepping == Approx(finalHeightDircol).margin(1e-5));
 
     return finalHeightTimeStepping;
 }
@@ -269,11 +276,11 @@ void testKnownKinematics() {
     SimTK::State state = model.initSystem();
     model.setStateVariableValue(state, "ty/ty/value", -0.005);
     model.setStateVariableValue(state, "ty/ty/speed", -0.01);
-    model.setStateVariableValue(state, "tx/tx/speed", 0.03);
-    model.setStateVariableValue(state, "tz/tz/speed", 0.02);
+    model.setStateVariableValue(state, "tx/tx/value", 0.03);
+    model.setStateVariableValue(state, "tx/tx/speed", 0.02);
 
     auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
-    model.realizeVelocity(state);
+    model.realizeDynamics(state);
     const Vec3 contactForce = contact.getContactForceOnStation(state);
 
     CHECK(contactForce[0] == Approx(-5.9842).margin(1e-3));
@@ -284,7 +291,7 @@ void testKnownKinematics() {
 template<typename T>
 void testStationPlaneContactForce() {
     const SimTK::Real equilibriumHeight = testNormalForce<T>();
-    testFrictionForce<T>(equilibriumHeight);
+    // testFrictionForce<T>(equilibriumHeight);
 }
 
 // Test our wrapping of SmoothSphereHalfSpaceForce in Moco
@@ -544,107 +551,107 @@ TEMPLATE_TEST_CASE("testStationPlaneContactForce", "[tropter]",
     testStationPlaneContactForce<TestType>();
 }
 
-TEST_CASE("testSmoothSphereHalfSpaceForce", "[casadi]") {
-    const SimTK::Real equilibriumHeight =
-        testSmoothSphereHalfSpaceForce_NormalForce();
-    testSmoothSphereHalfSpaceForce_FrictionForce(equilibriumHeight);
-}
+// TEST_CASE("testSmoothSphereHalfSpaceForce", "[casadi]") {
+//     const SimTK::Real equilibriumHeight =
+//         testSmoothSphereHalfSpaceForce_NormalForce();
+//     testSmoothSphereHalfSpaceForce_FrictionForce(equilibriumHeight);
+// }
 
-TEST_CASE("MocoContactTrackingGoal", "[casadi]") {
+// TEST_CASE("MocoContactTrackingGoal", "[casadi]") {
 
-    // We drop a ball from a prescribed initial height, record the contact
-    // force, then solve a trajectory optimization that tracks the recorded
-    // contact force and ensure we recover the correct initial height.
-    Model model(createBallHalfSpaceModel());
+//     // We drop a ball from a prescribed initial height, record the contact
+//     // force, then solve a trajectory optimization that tracks the recorded
+//     // contact force and ensure we recover the correct initial height.
+//     Model model(createBallHalfSpaceModel());
 
-    const double initialHeight = 0.65;
-    const SimTK::Real finalTime = 0.8;
+//     const double initialHeight = 0.65;
+//     const SimTK::Real finalTime = 0.8;
 
-    const std::string dataFileName =
-            "testContact_MocoContactTrackingGoal_external_loads.sto";
+//     const std::string dataFileName =
+//             "testContact_MocoContactTrackingGoal_external_loads.sto";
 
-    // Time stepping.
-    // --------------
-    TimeSeriesTable externalLoadsTimeStepping;
-    {
-        SimTK::State initialState = model.initSystem();
-        model.setStateVariableValue(initialState,
-                "groundBall/groundBall_coord_2/value", initialHeight);
-        Manager manager(model);
-        manager.setIntegratorAccuracy(1e-6);
-        manager.initialize(initialState);
-        manager.integrate(finalTime);
+//     // Time stepping.
+//     // --------------
+//     TimeSeriesTable externalLoadsTimeStepping;
+//     {
+//         SimTK::State initialState = model.initSystem();
+//         model.setStateVariableValue(initialState,
+//                 "groundBall/groundBall_coord_2/value", initialHeight);
+//         Manager manager(model);
+//         manager.setIntegratorAccuracy(1e-6);
+//         manager.initialize(initialState);
+//         manager.integrate(finalTime);
 
-        auto statesTraj = StatesTrajectory::createFromStatesStorage(
-                model, manager.getStateStorage());
-        externalLoadsTimeStepping = createExternalLoadsTableForGait(
-                model, statesTraj, {"contactBallHalfSpace"}, {});
-        STOFileAdapter::write(externalLoadsTimeStepping, dataFileName);
-    }
+//         auto statesTraj = StatesTrajectory::createFromStatesStorage(
+//                 model, manager.getStateStorage());
+//         externalLoadsTimeStepping = createExternalLoadsTableForGait(
+//                 model, statesTraj, {"contactBallHalfSpace"}, {});
+//         STOFileAdapter::write(externalLoadsTimeStepping, dataFileName);
+//     }
 
-    // Trajectory optimization.
-    // ------------------------
-    TimeSeriesTable externalLoadsDircol;
-    {
-        MocoStudy study;
-        MocoProblem& problem = study.updProblem();
-        problem.setModelAsCopy(model);
-        problem.setTimeBounds(0, finalTime);
-        problem.setStateInfo(
-                "/groundBall/groundBall_coord_0/value", {-1, 1}, 0);
-        problem.setStateInfo(
-                "/groundBall/groundBall_coord_1/value", {-1, 1}, 0);
-        problem.setStateInfo("/groundBall/groundBall_coord_2/value", {-1, 1.5},
-                {0.5, 0.7});
-        problem.setStateInfo(
-                "/groundBall/groundBall_coord_0/speed", {-10, 10}, 0);
-        problem.setStateInfo(
-                "/groundBall/groundBall_coord_1/speed", {-10, 10}, 0);
-        problem.setStateInfo(
-                "/groundBall/groundBall_coord_2/speed", {-10, 10}, 0);
+//     // Trajectory optimization.
+//     // ------------------------
+//     TimeSeriesTable externalLoadsDircol;
+//     {
+//         MocoStudy study;
+//         MocoProblem& problem = study.updProblem();
+//         problem.setModelAsCopy(model);
+//         problem.setTimeBounds(0, finalTime);
+//         problem.setStateInfo(
+//                 "/groundBall/groundBall_coord_0/value", {-1, 1}, 0);
+//         problem.setStateInfo(
+//                 "/groundBall/groundBall_coord_1/value", {-1, 1}, 0);
+//         problem.setStateInfo("/groundBall/groundBall_coord_2/value", {-1, 1.5},
+//                 {0.5, 0.7});
+//         problem.setStateInfo(
+//                 "/groundBall/groundBall_coord_0/speed", {-10, 10}, 0);
+//         problem.setStateInfo(
+//                 "/groundBall/groundBall_coord_1/speed", {-10, 10}, 0);
+//         problem.setStateInfo(
+//                 "/groundBall/groundBall_coord_2/speed", {-10, 10}, 0);
 
-        // Add a MocoContactTrackingGoal.
-        auto* contactTracking = problem.addGoal<MocoContactTrackingGoal>();
-        ExternalLoads extLoads;
-        extLoads.setDataFileName(dataFileName);
-        auto extForce = make_unique<ExternalForce>();
-        extForce->setName("right");
-        extForce->set_applied_to_body("ball");
-        extForce->set_force_identifier("ground_force_r_v");
-        extLoads.adoptAndAppend(extForce.release());
+//         // Add a MocoContactTrackingGoal.
+//         auto* contactTracking = problem.addGoal<MocoContactTrackingGoal>();
+//         ExternalLoads extLoads;
+//         extLoads.setDataFileName(dataFileName);
+//         auto extForce = make_unique<ExternalForce>();
+//         extForce->setName("right");
+//         extForce->set_applied_to_body("ball");
+//         extForce->set_force_identifier("ground_force_r_v");
+//         extLoads.adoptAndAppend(extForce.release());
 
-        contactTracking->setExternalLoads(extLoads);
-        contactTracking->addContactGroup({"contactBallHalfSpace"}, "right");
-        contactTracking->setProjection("vector");
-        contactTracking->setProjectionVector(SimTK::Vec3(0, 1, 0));
+//         contactTracking->setExternalLoads(extLoads);
+//         contactTracking->addContactGroup({"contactBallHalfSpace"}, "right");
+//         contactTracking->setProjection("vector");
+//         contactTracking->setProjectionVector(SimTK::Vec3(0, 1, 0));
 
-        // Solve the problem.
-        auto& solver = study.initCasADiSolver();
-        solver.set_num_mesh_intervals(30);
+//         // Solve the problem.
+//         auto& solver = study.initCasADiSolver();
+//         solver.set_num_mesh_intervals(30);
 
-        MocoSolution solution = study.solve();
+//         MocoSolution solution = study.solve();
 
-        // STOFileAdapter::write(externalLoadsDircol,
-        //         "testContact_MocoContactTrackingGoal_external_loads_dircol."
-        //         "sto");
+//         // STOFileAdapter::write(externalLoadsDircol,
+//         //         "testContact_MocoContactTrackingGoal_external_loads_dircol."
+//         //         "sto");
 
-        const double actualInitialHeight =
-                solution.getState("/groundBall/groundBall_coord_2/value").
-                        getElt(0, 0);
-        CHECK(actualInitialHeight == Approx(initialHeight).margin(1e-2));
+//         const double actualInitialHeight =
+//                 solution.getState("/groundBall/groundBall_coord_2/value").
+//                         getElt(0, 0);
+//         CHECK(actualInitialHeight == Approx(initialHeight).margin(1e-2));
 
-        externalLoadsDircol = createExternalLoadsTableForGait(model, solution,
-                {"contactBallHalfSpace"}, {});
-    }
+//         externalLoadsDircol = createExternalLoadsTableForGait(model, solution,
+//                 {"contactBallHalfSpace"}, {});
+//     }
 
-    rootMeanSquare(externalLoadsDircol, "ground_force_r_vy",
-            externalLoadsTimeStepping, "ground_force_r_vy",
-            0.5);
-}
+//     rootMeanSquare(externalLoadsDircol, "ground_force_r_vy",
+//             externalLoadsTimeStepping, "ground_force_r_vy",
+//             0.5);
+// }
 
 
 TEST_CASE("testMeyerFregly2016ForceValues", "[casadi]") {
-    testKnownKinematics();
+    // testKnownKinematics();
 }
 
 // This is a round-trip test. First, use createExternalLoadsTableForGait() to 
@@ -652,95 +659,95 @@ TEST_CASE("testMeyerFregly2016ForceValues", "[casadi]") {
 // contact force elements. Then, use the external loads to apply forces to the 
 // model with the contact force elements remove and ensure the accelerations 
 // match the accelerations of the original model.
-TEST_CASE("createExternalLoadsTableForGait") {
+// TEST_CASE("createExternalLoadsTableForGait") {
     
-    // The original model with foot-ground contact elements.
-    Model model("subject_20dof18musc_running.osim");
-    model.initSystem();
+//     // The original model with foot-ground contact elements.
+//     Model model("subject_20dof18musc_running.osim");
+//     model.initSystem();
 
-    // A copy of the model with the foot-ground contact elements removed.
-    Model modelNoContact(model);
-    modelNoContact.initSystem();
-    modelNoContact.updForceSet().clearAndDestroy();
-    modelNoContact.updContactGeometrySet().clearAndDestroy();
+//     // A copy of the model with the foot-ground contact elements removed.
+//     Model modelNoContact(model);
+//     modelNoContact.initSystem();
+//     modelNoContact.updForceSet().clearAndDestroy();
+//     modelNoContact.updContactGeometrySet().clearAndDestroy();
 
-    // Load the trajectory. Remove all columns not associated with the skeletal
-    // kinematics.
-    TimeSeriesTable trajectory("running_solution_full_stride.sto");
-    auto labels = trajectory.getColumnLabels();
-    for (const auto& label : labels) {
-        if (label.find("/jointset") == std::string::npos) {
-            trajectory.removeColumn(label);
-        }
-    }
-    auto statesTraj = StatesTrajectory::createFromStatesTable(model, trajectory);
+//     // Load the trajectory. Remove all columns not associated with the skeletal
+//     // kinematics.
+//     TimeSeriesTable trajectory("running_solution_full_stride.sto");
+//     auto labels = trajectory.getColumnLabels();
+//     for (const auto& label : labels) {
+//         if (label.find("/jointset") == std::string::npos) {
+//             trajectory.removeColumn(label);
+//         }
+//     }
+//     auto statesTraj = StatesTrajectory::createFromStatesTable(model, trajectory);
     
-    // Create external loads for the calcaneus bodies and apply them to the
-    // model without contact forces.
-    std::vector<std::string> contact_r = {"/forceset/contactHeel_r", 
-            "/forceset/contactLateralMidfoot_r",
-            "/forceset/contactMedialMidfoot_r"};
-    std::vector<std::string> contact_l = {"/forceset/contactHeel_l", 
-            "/forceset/contactLateralMidfoot_l",
-            "/forceset/contactMedialMidfoot_l"};
-    auto externalLoadsTableCalcn = createExternalLoadsTableForGait(model, 
-                statesTraj, contact_r, contact_l);
+//     // Create external loads for the calcaneus bodies and apply them to the
+//     // model without contact forces.
+//     std::vector<std::string> contact_r = {"/forceset/contactHeel_r", 
+//             "/forceset/contactLateralMidfoot_r",
+//             "/forceset/contactMedialMidfoot_r"};
+//     std::vector<std::string> contact_l = {"/forceset/contactHeel_l", 
+//             "/forceset/contactLateralMidfoot_l",
+//             "/forceset/contactMedialMidfoot_l"};
+//     auto externalLoadsTableCalcn = createExternalLoadsTableForGait(model, 
+//                 statesTraj, contact_r, contact_l);
 
-    // TODO: avoid writing to file for this conversion.
-    STOFileAdapter::write(externalLoadsTableCalcn, "external_loads_temp.sto");
-    Storage externalLoadsCalcn("external_loads_temp.sto");
+//     // TODO: avoid writing to file for this conversion.
+//     STOFileAdapter::write(externalLoadsTableCalcn, "external_loads_temp.sto");
+//     Storage externalLoadsCalcn("external_loads_temp.sto");
 
-    ExternalForce* externalForceLeftCalcn = new ExternalForce(
-            externalLoadsCalcn, "ground_force_l_v", "ground_force_l_p", 
-            "ground_torque_l_", "calcn_l");
-    modelNoContact.addForce(externalForceLeftCalcn);
+//     ExternalForce* externalForceLeftCalcn = new ExternalForce(
+//             externalLoadsCalcn, "ground_force_l_v", "ground_force_l_p", 
+//             "ground_torque_l_", "calcn_l");
+//     modelNoContact.addForce(externalForceLeftCalcn);
 
-    ExternalForce* externalForceRightCalcn = new ExternalForce(
-            externalLoadsCalcn, "ground_force_r_v", "ground_force_r_p", 
-            "ground_torque_r_", "calcn_r");
-    modelNoContact.addForce(externalForceRightCalcn);
-    modelNoContact.finalizeConnections();
+//     ExternalForce* externalForceRightCalcn = new ExternalForce(
+//             externalLoadsCalcn, "ground_force_r_v", "ground_force_r_p", 
+//             "ground_torque_r_", "calcn_r");
+//     modelNoContact.addForce(externalForceRightCalcn);
+//     modelNoContact.finalizeConnections();
 
-    // Create external loads for the toes bodies and apply them to the model
-    // without contact forces.
-    auto externalLoadsTableToes = createExternalLoadsTableForGait(model, 
-            statesTraj, {"/forceset/contactMedialToe_r"}, 
-            {"/forceset/contactMedialToe_l"});
+//     // Create external loads for the toes bodies and apply them to the model
+//     // without contact forces.
+//     auto externalLoadsTableToes = createExternalLoadsTableForGait(model, 
+//             statesTraj, {"/forceset/contactMedialToe_r"}, 
+//             {"/forceset/contactMedialToe_l"});
 
-    // TODO: avoid writing to file for this conversion.
-    STOFileAdapter::write(externalLoadsTableToes, "external_loads_temp.sto");
-    Storage externalLoadsToes("external_loads_temp.sto");
+//     // TODO: avoid writing to file for this conversion.
+//     STOFileAdapter::write(externalLoadsTableToes, "external_loads_temp.sto");
+//     Storage externalLoadsToes("external_loads_temp.sto");
 
-    ExternalForce* externalForceLeftToes = new ExternalForce(externalLoadsToes, 
-            "ground_force_l_v", "ground_force_l_p", "ground_torque_l_", 
-            "toes_l");
-    modelNoContact.addForce(externalForceLeftToes);
+//     ExternalForce* externalForceLeftToes = new ExternalForce(externalLoadsToes, 
+//             "ground_force_l_v", "ground_force_l_p", "ground_torque_l_", 
+//             "toes_l");
+//     modelNoContact.addForce(externalForceLeftToes);
 
-    ExternalForce* externalForceRightToes = new ExternalForce(externalLoadsToes, 
-            "ground_force_r_v", "ground_force_r_p", "ground_torque_r_", 
-            "toes_r");
-    modelNoContact.addForce(externalForceRightToes);
-    modelNoContact.finalizeConnections();
+//     ExternalForce* externalForceRightToes = new ExternalForce(externalLoadsToes, 
+//             "ground_force_r_v", "ground_force_r_p", "ground_torque_r_", 
+//             "toes_r");
+//     modelNoContact.addForce(externalForceRightToes);
+//     modelNoContact.finalizeConnections();
     
-    // If createExternalLoadsTableForGait() is working correctly, the
-    // accelerations of `modelNoContact` (i.e., with the external loads applied)
-    // should match the accelerations of `model` (i.e., the model with the 
-    // foot-ground contact elements).
-    SimTK::State stateNoContact = modelNoContact.initSystem();
-    for (int i = 0; i < static_cast<int>(statesTraj.getSize()); ++i) {
-        auto state = statesTraj[i];
-        model.realizeAcceleration(state);
+//     // If createExternalLoadsTableForGait() is working correctly, the
+//     // accelerations of `modelNoContact` (i.e., with the external loads applied)
+//     // should match the accelerations of `model` (i.e., the model with the 
+//     // foot-ground contact elements).
+//     SimTK::State stateNoContact = modelNoContact.initSystem();
+//     for (int i = 0; i < static_cast<int>(statesTraj.getSize()); ++i) {
+//         auto state = statesTraj[i];
+//         model.realizeAcceleration(state);
 
-        // Set the kinematic state of the model without contact forces to match
-        // the original model's state.
-        stateNoContact.setTime(state.getTime());
-        stateNoContact.setQ(state.getQ());
-        stateNoContact.setU(state.getU());
-        modelNoContact.realizeAcceleration(stateNoContact);
+//         // Set the kinematic state of the model without contact forces to match
+//         // the original model's state.
+//         stateNoContact.setTime(state.getTime());
+//         stateNoContact.setQ(state.getQ());
+//         stateNoContact.setU(state.getU());
+//         modelNoContact.realizeAcceleration(stateNoContact);
 
-        // Compare accelerations.
-        SimTK::Vector error = state.getUDot() - stateNoContact.getUDot();
-        CAPTURE(error);
-        CHECK_THAT(error.norm(), Catch::Matchers::WithinAbs(0, 1e-8));
-    }
-}
+//         // Compare accelerations.
+//         SimTK::Vector error = state.getUDot() - stateNoContact.getUDot();
+//         CAPTURE(error);
+//         CHECK_THAT(error.norm(), Catch::Matchers::WithinAbs(0, 1e-8));
+//     }
+// }

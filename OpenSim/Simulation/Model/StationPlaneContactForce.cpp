@@ -53,3 +53,12 @@ void StationPlaneContactForce::generateDecorations(
         geoms.push_back(sphere);
     }
 }
+
+// void StationPlaneContactForce::extendAddToSystem(
+//         SimTK::MultibodySystem& system) const {
+//     Super::extendAddToSystem(system);
+
+//     this->_forceOnStationCV = addCacheVariable<SimTK::Vec3>(
+//             "force_on_station", SimTK::Vec3(0),
+//             SimTK::Stage::Velocity);
+// }

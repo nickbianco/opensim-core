@@ -58,29 +58,31 @@ public:
             const SimTK::State& s,
             SimTK::Array_<SimTK::DecorativeGeometry>& geoms) const override;
 
-    const SimTK::Vec3& getContactForceOnStation(const SimTK::State& s) const {
-        computeContactForceOnStation(s);
-        return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
+    SimTK::Vec3 getContactForceOnStation(const SimTK::State& s) const {
+        return calcContactForceOnStation(s);
+        // computeContactForceOnStation(s);
+        // return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
     }
 
-    void setContactForceOnStation(const SimTK::State& s,
-            const SimTK::Vec3& force) const {
-        setCacheVariableValue(s, _forceOnStationCV, force);
-    }
+    // void setContactForceOnStation(const SimTK::State& s,
+    //         const SimTK::Vec3& force) const {
+    //     setCacheVariableValue(s, _forceOnStationCV, force);
+    // }
 
 protected:
+    // void extendAddToSystem(SimTK::MultibodySystem& system) const override;
     virtual SimTK::Vec3 calcContactForceOnStation(
             const SimTK::State& s) const = 0;
 
 private:
-    mutable CacheVariable<SimTK::Vec3> _forceOnStationCV;
+    // mutable CacheVariable<SimTK::Vec3> _forceOnStationCV;
 
-    void computeContactForceOnStation(const SimTK::State& s) const {
-        if (!isCacheVariableValid(s, _forceOnStationCV)) {
-            return;
-        }
-        setContactForceOnStation(s, calcContactForceOnStation(s));
-    }
+    // void computeContactForceOnStation(const SimTK::State& s) const {
+    //     if (isCacheVariableValid(s, _forceOnStationCV)) {
+    //         return;
+    //     }
+    //     setContactForceOnStation(s, calcContactForceOnStation(s));
+    // }
 
     void implProduceForces(const SimTK::State& s, ForceConsumer& forceConsumer) 
             const override {
@@ -189,17 +191,32 @@ public:
         const SimTK::Real slipOffset = 1e-4;
 
         /// Normal force.
+        // TODO: need to smoothly cap the height based on the NMSM pipeline:
+        // https://github.com/rcnl-org/nmsm-core/blob/e88992fcb22bad30b589ff46a1af5d069a2c3831/src/GroundContactPersonalization/Optimizations/ModelCalculation/calcModeledVerticalGroundReactionForce.m#L52
         y = y - resting_length;
+        std::cout << "y: " << y << std::endl;
+
         const SimTK::Real vp = (Kval + klow) / (Kval - klow);
         const SimTK::Real sp = (Kval - klow) / 2;
+        std::cout << "vp: " << vp << std::endl;
+        std::cout << "sp: " << sp << std::endl;
 
         const SimTK::Real constant =
                 -sp * (vp * ymax - c * log(cosh((ymax + h) / c)));
+        std::cout << "constant: " << constant << std::endl;
 
         SimTK::Real Fspring =
                 -sp * (vp * y - c * log(cosh((y + h) / c))) - constant;
+        std::cout << "vp * y: " << vp * y << std::endl;
+        std::cout << "y + h: " << y + h << std::endl;
+        std::cout << "(y + h) / c: " << (y + h) / c << std::endl;
+        std::cout << "cosh((y + h) / c): " << cosh((y + h) / c) << std::endl;
+        std::cout << "c * log(cosh((y + h) / c)): " << c * log(cosh((y + h) / c)) << std::endl;
+        std::cout << "c: " << c << std::endl;
+        std::cout << "Fspring: " << Fspring << std::endl;
 
         const SimTK::Real Fy = Fspring * (1 + Cval * depthRate);
+        std::cout << "Fy: " << Fy << std::endl;
 
         force[1] = Fy;
 
@@ -211,9 +228,12 @@ public:
         SimTK::Real horizontalForce = force[1] * (
                 mu_d * tanh(velSliding / latchvel) + mu_v * velSliding
         );
+        std::cout << "Horizontal force: " << horizontalForce << std::endl;
         
         force[0] = -vel[0] / (velSliding + slipOffset) * horizontalForce;
         force[2] = -vel[2] / (velSliding + slipOffset) * horizontalForce;
+
+        std::cout << "Force: " << force << std::endl;
 
         return force;
     }
