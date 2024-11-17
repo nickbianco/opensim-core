@@ -286,6 +286,7 @@ void testKnownKinematics() {
 
     CHECK_THAT(contactForce[0], Catch::Matchers::WithinAbs(-5.9842, 1e-3));
     CHECK_THAT(contactForce[1], Catch::Matchers::WithinAbs(40.0051, 1e-3));
+    // The system is planar, so there is no force in the z direction.
     CHECK_THAT(contactForce[2], Catch::Matchers::WithinAbs(0.0, 1e-10));
 }
 
