@@ -67,8 +67,8 @@ Model create2DPointMassModel() {
 
     auto* force = new T();
     force->setName("contact");
-    force->set_stiffness(1e5);
-    force->set_dissipation(1.0);
+    force->set_stiffness(1e4);
+    force->set_dissipation(1e-2);
     // force->set_friction_coefficient(FRICTION_COEFFICIENT);
     force->connectSocket_station(*station);
     model.addComponent(force);
@@ -97,7 +97,7 @@ SimTK::Real testNormalForce() {
     }
 
     const SimTK::Real y0 = 0.5;
-    const SimTK::Real finalTime = 0.1;
+    const SimTK::Real finalTime = 0.60;
 
     // Time stepping.
     // --------------
@@ -106,6 +106,7 @@ SimTK::Real testNormalForce() {
         SimTK::State state = model.initSystem();
         state.setTime(0.0);
         model.setStateVariableValue(state, "ty/ty/value", y0);
+        model.setStateVariableValue(state, "ty/ty/speed", 0.0);
         Manager manager(model);
         manager.setIntegratorAccuracy(1e-6);
         manager.initialize(state);
@@ -276,16 +277,16 @@ void testKnownKinematics() {
     SimTK::State state = model.initSystem();
     model.setStateVariableValue(state, "ty/ty/value", -0.005);
     model.setStateVariableValue(state, "ty/ty/speed", -0.01);
-    model.setStateVariableValue(state, "tx/tx/value", 0.03);
-    model.setStateVariableValue(state, "tx/tx/speed", 0.02);
+    model.setStateVariableValue(state, "tx/tx/value", 0.0);
+    model.setStateVariableValue(state, "tx/tx/speed", 0.03);
 
     auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
     model.realizeDynamics(state);
     const Vec3 contactForce = contact.getContactForceOnStation(state);
 
-    CHECK(contactForce[0] == Approx(-5.9842).margin(1e-3));
-    CHECK(contactForce[1] == Approx(40.0051).margin(1e-3));
-    CHECK(contactForce[2] == Approx(-3.9894).margin(1e-3));
+    CHECK_THAT(contactForce[0], Catch::Matchers::WithinAbs(-5.9842, 1e-3));
+    CHECK_THAT(contactForce[1], Catch::Matchers::WithinAbs(40.0051, 1e-3));
+    CHECK_THAT(contactForce[2], Catch::Matchers::WithinAbs(0.0, 1e-10));
 }
 
 template<typename T>
@@ -651,7 +652,7 @@ TEMPLATE_TEST_CASE("testStationPlaneContactForce", "[tropter]",
 
 
 TEST_CASE("testMeyerFregly2016ForceValues", "[casadi]") {
-    // testKnownKinematics();
+    testKnownKinematics();
 }
 
 // This is a round-trip test. First, use createExternalLoadsTableForGait() to 

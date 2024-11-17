@@ -60,14 +60,14 @@ public:
 
     SimTK::Vec3 getContactForceOnStation(const SimTK::State& s) const {
         return calcContactForceOnStation(s);
-        // computeContactForceOnStation(s);
-        // return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
+        computeContactForceOnStation(s);
+        return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
     }
 
-    // void setContactForceOnStation(const SimTK::State& s,
-    //         const SimTK::Vec3& force) const {
-    //     setCacheVariableValue(s, _forceOnStationCV, force);
-    // }
+    void setContactForceOnStation(const SimTK::State& s,
+            const SimTK::Vec3& force) const {
+        setCacheVariableValue(s, _forceOnStationCV, force);
+    }
 
 protected:
     // void extendAddToSystem(SimTK::MultibodySystem& system) const override;
@@ -75,14 +75,14 @@ protected:
             const SimTK::State& s) const = 0;
 
 private:
-    // mutable CacheVariable<SimTK::Vec3> _forceOnStationCV;
+    mutable CacheVariable<SimTK::Vec3> _forceOnStationCV;
 
-    // void computeContactForceOnStation(const SimTK::State& s) const {
-    //     if (isCacheVariableValid(s, _forceOnStationCV)) {
-    //         return;
-    //     }
-    //     setContactForceOnStation(s, calcContactForceOnStation(s));
-    // }
+    void computeContactForceOnStation(const SimTK::State& s) const {
+        if (isCacheVariableValid(s, _forceOnStationCV)) {
+            return;
+        }
+        setContactForceOnStation(s, calcContactForceOnStation(s));
+    }
 
     void implProduceForces(const SimTK::State& s, ForceConsumer& forceConsumer) 
             const override {
@@ -131,12 +131,12 @@ With the following values:
 Velocity is then used to incorporate non-linear damping:
 
 \f[
-F_{damped} = F * (1 + C_{val} * y_{vel})
+F_{damped} = F * (1 - C_{val} * y_{vel})
 \f]
 
 With the following values:
 - \f$ C_{val} \f$: damping coefficient of contact element
-- \f$ y_{vel} \f$: current y (vertical) velocity of contact element, negated
+- \f$ y_{vel} \f$: current y (vertical) velocity of contact element
 
 The force equation produces a force-penetration curve similar to a leaky 
 rectified linear function with a smooth transition region near zero. This 
@@ -171,69 +171,43 @@ public:
 
     /// Compute the force applied to body to which the station is attached, at
     /// the station, expressed in ground.
-    SimTK::Vec3 calcContactForceOnStation(const SimTK::State& s) const override {
+    SimTK::Vec3 calcContactForceOnStation(const SimTK::State& state) 
+            const override {
         SimTK::Vec3 force(0);
-        const auto& pt = getConnectee<Station>("station");
-        const auto& pos = pt.getLocationInGround(s);
-        const auto& vel = pt.getVelocityInGround(s);
-        const SimTK::Real resting_length = get_spring_resting_length();
-        SimTK::Real y = pos[1];
-        const SimTK::Real velNormal = vel[1];
-        SimTK::Real velSliding = sqrt(vel[0] * vel[0] + vel[2] * vel[2]);
-        const SimTK::Real depthRate = 0 - velNormal;
-        const SimTK::Real Kval = get_stiffness();
-        const SimTK::Real Cval = get_dissipation();
-        const SimTK::Real klow = 1e-1;
-        const SimTK::Real h = 1e-3;
-        const SimTK::Real c = 5e-4;
-        const SimTK::Real ymax = 1e-2;
-        // Prevents dividing by zero when sliding velocity is zero.
-        const SimTK::Real slipOffset = 1e-4;
+        const auto& station = getConnectee<Station>("station");
+        const auto& pos = station.getLocationInGround(state);
+        const auto& vel = station.getVelocityInGround(state);
 
-        /// Normal force.
-        // TODO: need to smoothly cap the height based on the NMSM pipeline:
+        // Limit maximum height used in force calculation.
+        SimTK::Real y = pos[1] - get_spring_resting_length();
+        // TODO smoothly transition to this value.
         // https://github.com/rcnl-org/nmsm-core/blob/e88992fcb22bad30b589ff46a1af5d069a2c3831/src/GroundContactPersonalization/Optimizations/ModelCalculation/calcModeledVerticalGroundReactionForce.m#L52
-        y = y - resting_length;
-        std::cout << "y: " << y << std::endl;
+        if (y > 0.354237930036971) {
+            y = 0.354237930036971;
+        }
 
-        const SimTK::Real vp = (Kval + klow) / (Kval - klow);
-        const SimTK::Real sp = (Kval - klow) / 2;
-        std::cout << "vp: " << vp << std::endl;
-        std::cout << "sp: " << sp << std::endl;
-
+        // Stiffness constants.
+        const SimTK::Real k = get_stiffness();
+        const SimTK::Real v = (k + klow) / (k - klow);
+        const SimTK::Real s = (k - klow) / 2.0;
         const SimTK::Real constant =
-                -sp * (vp * ymax - c * log(cosh((ymax + h) / c)));
-        std::cout << "constant: " << constant << std::endl;
+                -s * (v * ymax - c * log(cosh((ymax + h) / c)));
 
-        SimTK::Real Fspring =
-                -sp * (vp * y - c * log(cosh((y + h) / c))) - constant;
-        std::cout << "vp * y: " << vp * y << std::endl;
-        std::cout << "y + h: " << y + h << std::endl;
-        std::cout << "(y + h) / c: " << (y + h) / c << std::endl;
-        std::cout << "cosh((y + h) / c): " << cosh((y + h) / c) << std::endl;
-        std::cout << "c * log(cosh((y + h) / c)): " << c * log(cosh((y + h) / c)) << std::endl;
-        std::cout << "c: " << c << std::endl;
-        std::cout << "Fspring: " << Fspring << std::endl;
+        // Vertical spring-damper force.
+        const SimTK::Real Fspring =
+                -s * (v * y    - c * log(cosh((y    + h) / c))) - constant;
+        force[1] = Fspring * (1 - get_dissipation() * vel[1]);
 
-        const SimTK::Real Fy = Fspring * (1 + Cval * depthRate);
-        std::cout << "Fy: " << Fy << std::endl;
-
-        force[1] = Fy;
-
-        /// Friction force.
-        const SimTK::Real mu_d = get_dynamic_friction();
-        const SimTK::Real mu_v = get_viscous_friction();
-        const SimTK::Real latchvel = get_latch_velocity();
-
-        SimTK::Real horizontalForce = force[1] * (
-                mu_d * tanh(velSliding / latchvel) + mu_v * velSliding
+        // Friction force.
+        SimTK::Real slidingVelocity = sqrt(vel[0] * vel[0] + vel[2] * vel[2]);
+        const SimTK::Real horizontalForce = force[1] * (
+                get_dynamic_friction() * 
+                tanh(slidingVelocity /  get_latch_velocity()) + 
+                get_viscous_friction() * slidingVelocity
         );
-        std::cout << "Horizontal force: " << horizontalForce << std::endl;
         
-        force[0] = -vel[0] / (velSliding + slipOffset) * horizontalForce;
-        force[2] = -vel[2] / (velSliding + slipOffset) * horizontalForce;
-
-        std::cout << "Force: " << force << std::endl;
+        force[0] = -vel[0] / (slidingVelocity + slipOffset) * horizontalForce;
+        force[2] = -vel[2] / (slidingVelocity + slipOffset) * horizontalForce;
 
         return force;
     }
@@ -248,6 +222,12 @@ private:
         constructProperty_latch_velocity(0.05);
     }
 
+    constexpr static SimTK::Real klow = 1e-1;
+    constexpr static SimTK::Real h = 1e-3;
+    constexpr static SimTK::Real c = 5e-4;
+    constexpr static SimTK::Real ymax = 1e-2;
+    // Prevents dividing by zero when sliding velocity is zero.
+    constexpr static SimTK::Real slipOffset = 1e-4;
 };
 
 } // namespace OpenSim
