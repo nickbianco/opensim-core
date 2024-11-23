@@ -5,7 +5,7 @@
  * -------------------------------------------------------------------------- *
  * Copyright (c) 2024 Stanford University and the Authors                     *
  *                                                                            *
- * Author(s): Nicholas Bianco, Chris Dembia, Spencer Williams                 *
+ * Author(s): Nicholas Bianco, Christopher Dembia, Spencer Williams           *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may    *
  * not use this file except in compliance with the License. You may obtain a  *
@@ -30,60 +30,62 @@ Vertical force is calculated using stiffness and dissipation coefficients,
 while horizontal force is calculated using a friction model. */
 class OSIMSIMULATION_API StationPlaneContactForce : public ForceProducer {
 OpenSim_DECLARE_ABSTRACT_OBJECT(StationPlaneContactForce, ForceProducer);
+
 public:
+//=============================================================================
+// OUTPUTS
+//=============================================================================
     OpenSim_DECLARE_OUTPUT(force_on_station, SimTK::Vec3,
             getContactForceOnStation, SimTK::Stage::Velocity);
 
+//=============================================================================
+// SOCKETS
+//=============================================================================
     OpenSim_DECLARE_SOCKET(station, Station,
             "The body-fixed point that can contact the plane.");
 
-    OpenSim::Array<std::string> getRecordLabels() const override {
-        OpenSim::Array<std::string> labels;
-        const auto stationName = getConnectee("station").getName();
-        labels.append(getName() + "." + stationName + ".force.X");
-        labels.append(getName() + "." + stationName + ".force.Y");
-        labels.append(getName() + "." + stationName + ".force.Z");
-        return labels;
-    }
-    OpenSim::Array<double> getRecordValues(const SimTK::State& s)
-    const override {
-        OpenSim::Array<double> values;
-        const SimTK::Vec3& force = getContactForceOnStation(s);
-        values.append(force[0]);
-        values.append(force[1]);
-        values.append(force[2]);
-        return values;
-    }
-    void generateDecorations(bool fixed, const ModelDisplayHints& hints,
-            const SimTK::State& s,
-            SimTK::Array_<SimTK::DecorativeGeometry>& geoms) const override;
+//=============================================================================
+// METHODS
+//=============================================================================
 
+    // CONSTRUCTION
+    StationPlaneContactForce() = default;
+
+    /** TODO */
     SimTK::Vec3 getContactForceOnStation(const SimTK::State& s) const {
-        return calcContactForceOnStation(s);
-        computeContactForceOnStation(s);
+        if (!isCacheVariableValid(s, _forceOnStationCV)) {
+            setContactForceOnStation(s, calcContactForceOnStation(s));
+        }
         return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
     }
 
+    /** TODO */
     void setContactForceOnStation(const SimTK::State& s,
             const SimTK::Vec3& force) const {
         setCacheVariableValue(s, _forceOnStationCV, force);
     }
 
+    // FORCE INTERFACE
+    OpenSim::Array<std::string> getRecordLabels() const override;
+    OpenSim::Array<double> getRecordValues(const SimTK::State& s) const override;
+
+    // COMPONENT INTERFACE
+    void generateDecorations(bool fixed, const ModelDisplayHints& hints,
+            const SimTK::State& s,
+            SimTK::Array_<SimTK::DecorativeGeometry>& geoms) const override;
+
 protected:
-    // void extendAddToSystem(SimTK::MultibodySystem& system) const override;
+    /** TODO */
     virtual SimTK::Vec3 calcContactForceOnStation(
             const SimTK::State& s) const = 0;
 
+    // COMPONENT INTERFACE
+    void extendAddToSystem(SimTK::MultibodySystem& system) const override;
+    
 private:
     mutable CacheVariable<SimTK::Vec3> _forceOnStationCV;
 
-    void computeContactForceOnStation(const SimTK::State& s) const {
-        if (isCacheVariableValid(s, _forceOnStationCV)) {
-            return;
-        }
-        setContactForceOnStation(s, calcContactForceOnStation(s));
-    }
-
+    // FORCE PRODUCER INTERFACE
     void implProduceForces(const SimTK::State& s, ForceConsumer& forceConsumer) 
             const override {
 
@@ -147,11 +149,13 @@ Horizontal forces are then calculated based on this vertical force and the
 horizontal velocity components of the contact element. Both dynamic (modeled 
 with a tanh function) and viscous (modeled with a linear function) friction 
 models may be used. */
-class OSIMSIMULATION_API MeyerFregly2016Force
-        : public StationPlaneContactForce {
-OpenSim_DECLARE_CONCRETE_OBJECT(MeyerFregly2016Force,
-        StationPlaneContactForce);
+class OSIMSIMULATION_API MeyerFregly2016Force : public StationPlaneContactForce {
+OpenSim_DECLARE_CONCRETE_OBJECT(MeyerFregly2016Force, StationPlaneContactForce);
+
 public:
+//=============================================================================
+// PROPERTIES
+//=============================================================================
     OpenSim_DECLARE_PROPERTY(stiffness, double,
             "Spring stiffness in N/m (default: 1e4).");
     OpenSim_DECLARE_PROPERTY(dissipation, double,
@@ -165,63 +169,22 @@ public:
     OpenSim_DECLARE_PROPERTY(latch_velocity, double,
             "Latching velocity in m/s (default: 0.05).");
 
-    MeyerFregly2016Force() {
-        constructProperties();
-    }
+//=============================================================================
+// METHODS
+//=============================================================================
 
-    /// Compute the force applied to body to which the station is attached, at
-    /// the station, expressed in ground.
-    SimTK::Vec3 calcContactForceOnStation(const SimTK::State& state) 
-            const override {
-        SimTK::Vec3 force(0);
-        const auto& station = getConnectee<Station>("station");
-        const auto& pos = station.getLocationInGround(state);
-        const auto& vel = station.getVelocityInGround(state);
-
-        // Limit maximum height used in force calculation.
-        SimTK::Real y = pos[1] - get_spring_resting_length();
-        // TODO smoothly transition to this value.
-        // https://github.com/rcnl-org/nmsm-core/blob/e88992fcb22bad30b589ff46a1af5d069a2c3831/src/GroundContactPersonalization/Optimizations/ModelCalculation/calcModeledVerticalGroundReactionForce.m#L52
-        if (y > 0.354237930036971) {
-            y = 0.354237930036971;
-        }
-
-        // Stiffness constants.
-        const SimTK::Real k = get_stiffness();
-        const SimTK::Real v = (k + klow) / (k - klow);
-        const SimTK::Real s = (k - klow) / 2.0;
-        const SimTK::Real constant =
-                -s * (v * ymax - c * log(cosh((ymax + h) / c)));
-
-        // Vertical spring-damper force.
-        const SimTK::Real Fspring =
-                -s * (v * y    - c * log(cosh((y    + h) / c))) - constant;
-        force[1] = Fspring * (1 - get_dissipation() * vel[1]);
-
-        // Friction force.
-        SimTK::Real slidingVelocity = sqrt(vel[0] * vel[0] + vel[2] * vel[2]);
-        const SimTK::Real horizontalForce = force[1] * (
-                get_dynamic_friction() * 
-                tanh(slidingVelocity /  get_latch_velocity()) + 
-                get_viscous_friction() * slidingVelocity
-        );
-        
-        force[0] = -vel[0] / (slidingVelocity + slipOffset) * horizontalForce;
-        force[2] = -vel[2] / (slidingVelocity + slipOffset) * horizontalForce;
-
-        return force;
-    }
+    // CONSTRUCTION
+    MeyerFregly2016Force();
 
 private:
-    void constructProperties() {
-        constructProperty_stiffness(1.0e4);
-        constructProperty_dissipation(1.0e-2);
-        constructProperty_spring_resting_length(0);
-        constructProperty_dynamic_friction(0);
-        constructProperty_viscous_friction(5.0);
-        constructProperty_latch_velocity(0.05);
-    }
+    // STATION PLANE CONTACT FORCE INTERFACE
+    SimTK::Vec3 calcContactForceOnStation(
+            const SimTK::State& state) const override; 
 
+    // PROPERTIES
+    void constructProperties();
+
+    // CONSTANTS
     constexpr static SimTK::Real klow = 1e-1;
     constexpr static SimTK::Real h = 1e-3;
     constexpr static SimTK::Real c = 5e-4;

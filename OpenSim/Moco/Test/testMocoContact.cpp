@@ -67,8 +67,8 @@ Model create2DPointMassModel() {
 
     auto* force = new T();
     force->setName("contact");
-    force->set_stiffness(1e4);
-    force->set_dissipation(1e-2);
+    // force->set_stiffness(1e4);
+    // force->set_dissipation(1e-2);
     // force->set_friction_coefficient(FRICTION_COEFFICIENT);
     force->connectSocket_station(*station);
     model.addComponent(force);
@@ -82,11 +82,7 @@ Model create2DPointMassModel() {
 // collocation.
 template<typename T>
 SimTK::Real testNormalForce() {
-    // TODO this copy breaks the contact force station socket path
-    Model modelTemp = create2DPointMassModel<T>();
-    modelTemp.finalizeConnections();
-    Model model(modelTemp);
-    // model.setUseVisualizer(true);
+    Model model = create2DPointMassModel<T>();
     model.finalizeConnections();
     ModelProcessor modelProc(model);
 
@@ -185,10 +181,7 @@ SimTK::Real testNormalForce() {
 template<typename T>
 void testFrictionForce(const SimTK::Real& equilibriumHeight) {
     auto model = create2DPointMassModel<T>();
-
-    {
-        SimTK::State state = model.initSystem();
-    }
+    model.initSystem();
 
     const SimTK::Real y0 = equilibriumHeight;
     const SimTK::Real finalTime = 0.5;
@@ -264,30 +257,6 @@ void testFrictionForce(const SimTK::Real& equilibriumHeight) {
         OpenSim_CHECK_MATRIX_ABSTOL(finalState.getU(),
                 SimTK::Vector(finalState.getNU(), 0.0), 1e-3);
     }
-}
-
-// Test that the contact model produces the expected force output for a given
-// set of input kinematics and default parameters. 
-void testKnownKinematics() {
-    Model modelTemp = create2DPointMassModel<MeyerFregly2016Force>();
-    modelTemp.finalizeConnections();
-    Model model(modelTemp);
-    model.finalizeConnections();
-
-    SimTK::State state = model.initSystem();
-    model.setStateVariableValue(state, "ty/ty/value", -0.005);
-    model.setStateVariableValue(state, "ty/ty/speed", -0.01);
-    model.setStateVariableValue(state, "tx/tx/value", 0.0);
-    model.setStateVariableValue(state, "tx/tx/speed", 0.03);
-
-    auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
-    model.realizeDynamics(state);
-    const Vec3 contactForce = contact.getContactForceOnStation(state);
-
-    CHECK_THAT(contactForce[0], Catch::Matchers::WithinAbs(-5.9842, 1e-3));
-    CHECK_THAT(contactForce[1], Catch::Matchers::WithinAbs(40.0051, 1e-3));
-    // The system is planar, so there is no force in the z direction.
-    CHECK_THAT(contactForce[2], Catch::Matchers::WithinAbs(0.0, 1e-10));
 }
 
 template<typename T>
@@ -653,7 +622,23 @@ TEMPLATE_TEST_CASE("testStationPlaneContactForce", "[tropter]",
 
 
 TEST_CASE("testMeyerFregly2016ForceValues", "[casadi]") {
-    testKnownKinematics();
+    Model model = create2DPointMassModel<MeyerFregly2016Force>();
+    model.finalizeConnections();
+
+    SimTK::State state = model.initSystem();
+    model.setStateVariableValue(state, "ty/ty/value", -0.005);
+    model.setStateVariableValue(state, "ty/ty/speed", -0.01);
+    model.setStateVariableValue(state, "tx/tx/value", 0.0);
+    model.setStateVariableValue(state, "tx/tx/speed", 0.03);
+
+    auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
+    model.realizeDynamics(state);
+    const Vec3 contactForce = contact.getContactForceOnStation(state);
+
+    CHECK_THAT(contactForce[0], Catch::Matchers::WithinAbs(-5.9842, 1e-3));
+    CHECK_THAT(contactForce[1], Catch::Matchers::WithinAbs(40.0051, 1e-3));
+    // The system is planar, so there is no force in the z direction.
+    CHECK_THAT(contactForce[2], Catch::Matchers::WithinAbs(0.0, 1e-10));
 }
 
 // This is a round-trip test. First, use createExternalLoadsTableForGait() to 
