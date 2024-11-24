@@ -20,7 +20,8 @@
 
 #include <OpenSim/Simulation/Model/ForceConsumer.h>
 #include <OpenSim/Simulation/Model/ForceProducer.h>
-#include <OpenSim/Simulation/osimSimulation.h>
+#include <OpenSim/Simulation/Model/Model.h>
+#include <OpenSim/Simulation/Model/Station.h>
 
 namespace OpenSim {
 
