@@ -116,7 +116,7 @@ SimTK::Real testNormalForce() {
         TimeSeriesTable statesTable = manager.getStatesTable();
         STOFileAdapter::write(statesTable, "testMocoContact_states.sto");
 
-        // VisualizerUtilities::showMotion(model, manager.getStatesTable());
+        VisualizerUtilities::showMotion(model, manager.getStatesTable());
 
         // https://stackoverflow.com/questions/34696351/template-dependent-typename
         auto& contact = model.template getComponent<StationPlaneContactForce>("contact");

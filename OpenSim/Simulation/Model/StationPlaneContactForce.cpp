@@ -18,7 +18,29 @@
 
 #include "StationPlaneContactForce.h"
 
+#include <OpenSim/Simulation/Model/Model.h>
+
 using namespace OpenSim;
+
+//=============================================================================
+// STATION PLANE CONTACT FORCE
+//=============================================================================
+StationPlaneContactForce::StationPlaneContactForce() {
+    constructProperty_force_visualization_scale_factor();
+}
+
+SimTK::Vec3 StationPlaneContactForce::getContactForceOnStation(
+        const SimTK::State& s) const {
+    if (!isCacheVariableValid(s, _forceOnStationCV)) {
+        setContactForceOnStation(s, calcContactForceOnStation(s));
+    }
+    return getCacheVariableValue<SimTK::Vec3>(s, _forceOnStationCV);
+}
+
+void StationPlaneContactForce::setContactForceOnStation(const SimTK::State& s,
+        const SimTK::Vec3& force) const {
+    setCacheVariableValue(s, _forceOnStationCV, force);
+}
 
 OpenSim::Array<std::string> StationPlaneContactForce::getRecordLabels() const {
     OpenSim::Array<std::string> labels;
@@ -43,33 +65,40 @@ void StationPlaneContactForce::generateDecorations(bool fixed,
         const ModelDisplayHints& hints, const SimTK::State& s,
         SimTK::Array_<SimTK::DecorativeGeometry>& geoms) const {
     Super::generateDecorations(fixed, hints, s, geoms);
+    const auto& station = getConnectee<Station>("station");
 
-    if (!fixed) {
-        getModel().realizeVelocity(s);
-        // Normalize contact force vector by body weight so that the line
-        // is 1 meter long if the contact force magnitude is equal to
-        // body weight.
-        const double arrowLengthPerForce = 1.0 / 1000.0; // meters / Newton
-        //const double mg =
-        //        getModel().getTotalMass(s) * getModel().getGravity().norm();
-        // TODO avoid recalculating.
-        const auto& pt = getConnectee<Station>("station");
-        const auto pt1 = pt.getLocationInGround(s);
-        const SimTK::Vec3& force = getContactForceOnStation(s);
-        const SimTK::Vec3 pt2 = pt1 + force * arrowLengthPerForce; // mg;
-        SimTK::DecorativeLine line(pt1, pt2);
-        line.setColor(SimTK::Green);
-        line.setLineThickness(0.10);
-        geoms.push_back(line);
+    // Station visualization.
+    SimTK::DecorativeSphere sphere;
+    sphere.setColor(SimTK::Green);
+    sphere.setRadius(0.01);
+    sphere.setBodyId(station.getParentFrame().getMobilizedBodyIndex());
+    sphere.setRepresentation(SimTK::DecorativeGeometry::DrawWireframe);
+    sphere.setTransform(SimTK::Transform(station.get_location()));
+    geoms.push_back(sphere);
 
-        // TODO move to fixed.
-        SimTK::DecorativeSphere sphere;
-        sphere.setColor(SimTK::Green);
-        sphere.setRadius(0.01);
-        sphere.setBodyId(pt.getParentFrame().getMobilizedBodyIndex());
-        sphere.setRepresentation(SimTK::DecorativeGeometry::DrawWireframe);
-        sphere.setTransform(SimTK::Transform(pt.get_location()));
-        geoms.push_back(sphere);
+    if (fixed) return;
+
+    // Contact force visualization.
+    getModel().realizeVelocity(s);
+    const auto point1 = station.getLocationInGround(s);
+    const SimTK::Vec3& force = getContactForceOnStation(s);
+    const SimTK::Vec3 point2 = point1 + force * m_forceVizScaleFactor;
+    SimTK::DecorativeLine line(point1, point2);
+    line.setColor(SimTK::Green);
+    line.setLineThickness(1.0);
+    geoms.push_back(line);   
+}
+
+void StationPlaneContactForce::extendRealizeInstance(
+        const SimTK::State& state) const {
+    Super::extendRealizeInstance(state);
+    if (!getProperty_force_visualization_scale_factor().empty()) {
+        m_forceVizScaleFactor = get_force_visualization_scale_factor();
+    } else {
+        const Model& model = getModel();
+        const double mass = model.getTotalMass(state);
+        const double weight = mass * model.getGravity().norm();
+        m_forceVizScaleFactor = 1 / weight;
     }
 }
 
@@ -82,7 +111,23 @@ void StationPlaneContactForce::extendAddToSystem(
             SimTK::Stage::Velocity);
 }
 
-MeyerFregly2016Force::MeyerFregly2016Force() {
+void StationPlaneContactForce::implProduceForces(const SimTK::State& s, 
+        ForceConsumer& forceConsumer) const {
+
+    const SimTK::Vec3& force = getContactForceOnStation(s);
+    const auto& station = getConnectee<Station>("station");
+    const auto& pos = station.getLocationInGround(s);
+    const auto& frame = station.getParentFrame();
+
+    forceConsumer.consumePointForce(s, frame, station.get_location(), force);
+    forceConsumer.consumePointForce(s, getModel().getGround(), pos, -force);
+}
+
+//=============================================================================
+// MEYER FREGLY 2016 FORCE
+//=============================================================================
+
+MeyerFregly2016Force::MeyerFregly2016Force() : StationPlaneContactForce() {
     constructProperties();
 }
 
