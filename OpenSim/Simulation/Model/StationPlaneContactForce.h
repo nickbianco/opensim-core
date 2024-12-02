@@ -186,7 +186,7 @@ private:
     // CONSTANTS
     constexpr static SimTK::Real klow = 1e-1;
     constexpr static SimTK::Real h = 1e-3;
-    constexpr static SimTK::Real c = 5e-4;
+    constexpr static SimTK::Real c = 1e-3;
     constexpr static SimTK::Real ymax = 1e-2;
     // Prevents dividing by zero when sliding velocity is zero.
     constexpr static SimTK::Real slipOffset = 1e-4;
