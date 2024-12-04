@@ -47,6 +47,7 @@ v4.6
 - Added the templatized `MocoStudy::analyze<T>()` and equivalent scripting counterparts: `analyzeVec3`, `analyzeSpatialVec`, `analyzeRotation`. (#3940)
 - Added `ConstantCurvatureJoint` to the SWIG bindings; it is now available in Matlab and Python (#3957). 
 - Added methods and `Output`s for calculating the angular momentum of a `Body`. (#3962)
+- Completed the implementation of the `MeyerFregly2016Force` included in the `StationPlaneContactForce` class to support NMSM Pipeline-equivalent contact models in Moco. (#3877)
 
 
 v4.5.1

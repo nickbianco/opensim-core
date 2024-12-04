@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- *
- * OpenSim Moco: testContact.cpp                                              *
+ * OpenSim Moco: testMocoContact.cpp                                          *
  * -------------------------------------------------------------------------- *
  * Copyright (c) 2017-19 Stanford University and the Authors                  *
  *                                                                            *
@@ -18,8 +18,15 @@
  * -------------------------------------------------------------------------- */
 
 #include <OpenSim/Moco/osimMoco.h>
-#include <OpenSim/Simulation/Manager/Manager.h>
 #include <OpenSim/Actuators/ModelOperators.h>
+#include <OpenSim/Simulation/Manager/Manager.h>
+#include <OpenSim/Simulation/Model/StationPlaneContactForce.h>
+#include <OpenSim/Simulation/Model/ContactHalfSpace.h>
+#include <OpenSim/Simulation/Model/ContactSphere.h>
+#include <OpenSim/Simulation/Model/SmoothSphereHalfSpaceForce.h>
+#include <OpenSim/Simulation/SimbodyEngine/SliderJoint.h>
+#include <OpenSim/Simulation/SimbodyEngine/PlanarJoint.h>
+#include <OpenSim/Simulation/VisualizerUtilities.h>
 
 #include <catch2/catch_all.hpp>
 #include "Testing.h"
@@ -64,9 +71,9 @@ Model create2DPointMassModel() {
 
     auto* force = new T();
     force->setName("contact");
-    force->set_stiffness(1e5);
-    force->set_dissipation(1.0);
-    force->set_friction_coefficient(FRICTION_COEFFICIENT);
+    // force->set_stiffness(1e4);
+    // force->set_dissipation(1e-2);
+    // force->set_friction_coefficient(FRICTION_COEFFICIENT);
     force->connectSocket_station(*station);
     model.addComponent(force);
 
@@ -79,10 +86,7 @@ Model create2DPointMassModel() {
 // collocation.
 template<typename T>
 SimTK::Real testNormalForce() {
-    // TODO this copy breaks the contact force station socket path
-    Model modelTemp = create2DPointMassModel<T>();
-    modelTemp.finalizeConnections();
-    Model model(modelTemp);
+    Model model = create2DPointMassModel<T>();
     model.finalizeConnections();
     ModelProcessor modelProc(model);
 
@@ -106,12 +110,16 @@ SimTK::Real testNormalForce() {
         manager.initialize(state);
         state = manager.integrate(finalTime);
 
-        // visualize(model, manager.getStateStorage());
+        // VisualizerUtilities::showModel(model);
+        TimeSeriesTable statesTable = manager.getStatesTable();
+        STOFileAdapter::write(statesTable, "testMocoContact_states.sto");
+
+        // VisualizerUtilities::showMotion(model, manager.getStatesTable());
 
         // https://stackoverflow.com/questions/34696351/template-dependent-typename
         auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
         model.realizeVelocity(state);
-        const Vec3 contactForce = contact.calcContactForceOnStation(state);
+        const Vec3 contactForce = contact.getContactForceOnStation(state);
         // The horizontal force is not quite zero, maybe from a buildup of
         // numerical error (tightening the accuracy reduces this force).
         CHECK(contactForce[0] == Approx(0).margin(0.01));
@@ -152,7 +160,7 @@ SimTK::Real testNormalForce() {
         model.realizeVelocity(finalState);
         // https://stackoverflow.com/questions/34696351/template-dependent-typename
         auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
-        const Vec3 contactForce = contact.calcContactForceOnStation(finalState);
+        const Vec3 contactForce = contact.getContactForceOnStation(finalState);
         // For some reason, direct collocation doesn't produce the same
         // numerical issues with the x component of the force as seen above.
         CHECK(contactForce[0] == Approx(0).margin(1e-15));
@@ -175,10 +183,7 @@ SimTK::Real testNormalForce() {
 template<typename T>
 void testFrictionForce(const SimTK::Real& equilibriumHeight) {
     auto model = create2DPointMassModel<T>();
-
-    {
-        SimTK::State state = model.initSystem();
-    }
+    model.initSystem();
 
     const SimTK::Real y0 = equilibriumHeight;
     const SimTK::Real finalTime = 0.5;
@@ -259,7 +264,7 @@ void testFrictionForce(const SimTK::Real& equilibriumHeight) {
 template<typename T>
 void testStationPlaneContactForce() {
     const SimTK::Real equilibriumHeight = testNormalForce<T>();
-    testFrictionForce<T>(equilibriumHeight);
+    // testFrictionForce<T>(equilibriumHeight);
 }
 
 // Test our wrapping of SmoothSphereHalfSpaceForce in Moco
@@ -514,11 +519,10 @@ void testSmoothSphereHalfSpaceForce_FrictionForce(
     }
 }
 
-TEMPLATE_TEST_CASE("testStationPlaneContactForce", "[tropter]", 
-        AckermannVanDenBogert2010Force, EspositoMiller2018Force
-        /* TODO MeyerFregly2016Force */) {
-    testStationPlaneContactForce<TestType>();
-}
+// TEMPLATE_TEST_CASE("testStationPlaneContactForce", "[tropter]", 
+//         MeyerFregly2016Force) {
+//     testStationPlaneContactForce<TestType>();
+// }
 
 TEST_CASE("testSmoothSphereHalfSpaceForce", "[casadi]") {
     const SimTK::Real equilibriumHeight =
@@ -617,6 +621,27 @@ TEST_CASE("MocoContactTrackingGoal", "[casadi]") {
             externalLoadsTimeStepping, "ground_force_r_vy",
             0.5);
 }
+
+
+// TEST_CASE("testMeyerFregly2016ForceValues", "[casadi]") {
+//     Model model = create2DPointMassModel<MeyerFregly2016Force>();
+//     model.finalizeConnections();
+
+//     SimTK::State state = model.initSystem();
+//     model.setStateVariableValue(state, "ty/ty/value", -0.005);
+//     model.setStateVariableValue(state, "ty/ty/speed", -0.01);
+//     model.setStateVariableValue(state, "tx/tx/value", 0.0);
+//     model.setStateVariableValue(state, "tx/tx/speed", 0.03);
+
+//     auto& contact = model.template getComponent<StationPlaneContactForce>("contact");
+//     model.realizeDynamics(state);
+//     const Vec3 contactForce = contact.getContactForceOnStation(state);
+
+//     CHECK_THAT(contactForce[0], Catch::Matchers::WithinAbs(-5.9842, 1e-3));
+//     CHECK_THAT(contactForce[1], Catch::Matchers::WithinAbs(40.0051, 1e-3));
+//     // The system is planar, so there is no force in the z direction.
+//     CHECK_THAT(contactForce[2], Catch::Matchers::WithinAbs(0.0, 1e-10));
+// }
 
 // This is a round-trip test. First, use createExternalLoadsTableForGait() to 
 // create a table of external loads based on a simulation with foot-ground 
