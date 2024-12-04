@@ -96,7 +96,7 @@ SimTK::Real testNormalForce() {
         weight = model.getTotalMass(state) * (-model.getGravity()[1]);
     }
 
-    const SimTK::Real y0 = 2.0;
+    const SimTK::Real y0 = 0.5;
     const SimTK::Real finalTime = 2.0;
 
     // Time stepping.
@@ -104,9 +104,7 @@ SimTK::Real testNormalForce() {
     SimTK::Real finalHeightTimeStepping;
     {
         SimTK::State state = model.initSystem();
-        state.setTime(0.0);
         model.setStateVariableValue(state, "ty/ty/value", y0);
-        // model.setStateVariableValue(state, "ty/ty/speed", 0.0);
         Manager manager(model);
         manager.setIntegratorAccuracy(1e-6);
         manager.initialize(state);
