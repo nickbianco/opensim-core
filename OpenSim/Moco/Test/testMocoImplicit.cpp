@@ -20,10 +20,10 @@
 #include <OpenSim/Moco/Components/AccelerationMotion.h>
 #include <OpenSim/Moco/osimMoco.h>
 #include <OpenSim/Simulation/Model/PhysicalOffsetFrame.h>
+#include <OpenSim/Simulation/SimbodyEngine/CoordinateCouplerConstraint.h>
 #include <OpenSim/Common/LinearFunction.h>
 
 #include <catch2/catch_all.hpp>
-#include "Testing.h"
 
 using namespace OpenSim;
 using namespace Catch;
@@ -432,7 +432,7 @@ TEST_CASE("Implicit auxiliary dynamics") {
     SECTION("Direct collocation implicit") {
        MocoStudy study;
        auto& problem = study.updProblem();
-       auto model = OpenSim::make_unique<Model>();
+       auto model = std::make_unique<Model>();
        model->addComponent(new MyAuxiliaryImplicitDynamics());
        problem.setModel(std::move(model));
        problem.setTimeBounds(0, 1);
@@ -448,7 +448,7 @@ TEST_CASE("Implicit auxiliary dynamics") {
     SECTION("MocoTropterSolver does not support implicit auxiliary dynamics") {
         MocoStudy study;
         auto& problem = study.updProblem();
-        auto model = OpenSim::make_unique<Model>();
+        auto model = std::make_unique<Model>();
         model->addComponent(new MyAuxiliaryImplicitDynamics());
         problem.setModel(std::move(model));
         problem.setTimeBounds(0, 1);

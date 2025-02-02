@@ -25,6 +25,9 @@
 #include <OpenSim/Moco/osimMoco.h>
 #include <OpenSim/Simulation/SimbodyEngine/PinJoint.h>
 #include <OpenSim/Simulation/SimbodyEngine/SliderJoint.h>
+#include <OpenSim/Simulation/SimbodyEngine/WeldJoint.h>
+#include <OpenSim/Simulation/SimbodyEngine/PlanarJoint.h>
+#include <OpenSim/Simulation/SimbodyEngine/PointConstraint.h>
 
 #include "Testing.h"
 #include <catch2/catch_all.hpp>
@@ -36,7 +39,7 @@ using namespace OpenSim;
 
 /// creates a model with one sliding mass
 std::unique_ptr<Model> createSlidingMassModel() {
-    auto model = make_unique<Model>();
+    auto model = std::make_unique<Model>();
     model->setName("sliding_mass");
     model->set_gravity(SimTK::Vec3(0, 0, 0));
     auto* body = new Body("body", 10.0, SimTK::Vec3(0), SimTK::Inertia(0));
@@ -1507,7 +1510,7 @@ const double STIFFNESS = 100.0; // N/m
 const double MASS = 5.0; // kg
 const double FINAL_TIME = SimTK::Pi * sqrt(MASS / STIFFNESS);
 std::unique_ptr<Model> createOscillatorTwoSpringsModel() {
-    auto model = make_unique<Model>();
+    auto model = std::make_unique<Model>();
     model->setName("oscillator_two_springs");
     model->set_gravity(SimTK::Vec3(0, 0, 0));
     auto* body = new Body("body", MASS, SimTK::Vec3(0), SimTK::Inertia(0));
