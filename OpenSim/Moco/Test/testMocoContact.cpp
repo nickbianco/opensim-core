@@ -587,7 +587,7 @@ TEST_CASE("MocoContactTrackingGoal", "[casadi]") {
         auto* contactTracking = problem.addGoal<MocoContactTrackingGoal>();
         ExternalLoads extLoads;
         extLoads.setDataFileName(dataFileName);
-        auto extForce = make_unique<ExternalForce>();
+        auto extForce = std::make_unique<ExternalForce>();
         extForce->setName("right");
         extForce->set_applied_to_body("ball");
         extForce->set_force_identifier("ground_force_r_v");
