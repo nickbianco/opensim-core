@@ -67,6 +67,8 @@ v4.6
     if one is detected (previously: it would emit decorations with `NaN`ed transforms).
 - `PolynomialPathFitter` now allows fitting paths that depend on more than 6 coordinates, matching recent changes to `MultivariatePolynomialFunction` (#4001).
 - If an `Object` cannot be found when loading a list property from XML, a warning will now be emitted to the log (previously: it was emitted to `std::cerr`, #4009).
+- Completed the implementation of the `MeyerFregly2016Force` included in the `StationPlaneContactForce` class to support NMSM Pipeline-equivalent contact models in Moco. (#3877)
+
 
 v4.5.1
 ======
