@@ -1,9 +1,9 @@
 /* -------------------------------------------------------------------------- *
- * OpenSim Moco: StationPlaneContactForce.cpp                                 *
+ * OpenSim: StationPlaneContactForce.cpp                                      *
  * -------------------------------------------------------------------------- *
- * Copyright (c) 2017 Stanford University and the Authors                     *
+ * Copyright (c) 2025 Stanford University and the Authors                     *
  *                                                                            *
- * Author(s): Nicholas Bianco, Christopher Dembia                             *
+ * Author(s): Nicholas Bianco, Christopher Dembia, Spencer Williams           *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may    *
  * not use this file except in compliance with the License. You may obtain a  *

@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- *
  * OpenSim: StationPlaneContactForce.h                                        *
  * -------------------------------------------------------------------------- *
- * Copyright (c) 2024 Stanford University and the Authors                     *
+ * Copyright (c) 2025 Stanford University and the Authors                     *
  *                                                                            *
  * Author(s): Nicholas Bianco, Christopher Dembia, Spencer Williams           *
  *                                                                            *
