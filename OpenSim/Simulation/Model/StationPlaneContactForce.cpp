@@ -140,11 +140,36 @@ SimTK::Vec3 MeyerFregly2016Force::calcContactForceOnStation(
 
     // Limit maximum height used in force calculation.
     SimTK::Real y = pos[1] - get_spring_resting_length();
-    // TODO smoothly transition to this value.
-    // https://github.com/rcnl-org/nmsm-core/blob/e88992fcb22bad30b589ff46a1af5d069a2c3831/src/GroundContactPersonalization/Optimizations/ModelCalculation/calcModeledVerticalGroundReactionForce.m#L52
-    if (y > 0.354237930036971) {
-        y = 0.354237930036971;
-    }
+    
+    // When the height variable reaches a critical value of 0.70947586,
+    // the calculated vertical ground reaction force goes to fininity. Thus,
+    // it is essential to keep the height variable below this value.
+    // Originally, this goal was achieved with the following line of code:
+    //
+    // y = min(y, 0.70947586);
+    //
+    // However, allowing the height variable to reach 0.70947586 still
+    // causes a singularity in the calculated vertical ground reaction
+    // force. Backing off this critical value to 0.7 and changing the line
+    // of code above to the following produces faster Tracking Optimization
+    // convergence:
+    //
+    // y = min(y, 0.7);
+    //
+    // However, this "fix" is still non-smooth, which negatively impacts
+    // convergence. As an alternative, the min function can be replaced with the
+    // following tanh function to create a smooth height variable:
+    //
+    // y = 0.7*tanh((1/0.7)*y);
+    //
+    // This implementation causes the new height to be 0 when the original
+    // height is zero, the new height to be essentially linear with the
+    // original height when the original height is less than zero (i.e., in
+    // contact situations), and the new height to follow a tanh function
+    // that approaches 0.7 as the original height increases beyond 0.7
+    // (i.e., out of contact situations). This tanh formulation has been
+    // proven to speed up convergence substantially.
+    y = 0.7*std::tanh((1.0/0.7)*y);
 
     // Stiffness constants.
     const SimTK::Real k = get_stiffness();
@@ -155,7 +180,7 @@ SimTK::Vec3 MeyerFregly2016Force::calcContactForceOnStation(
 
     // Vertical spring-damper force.
     const SimTK::Real Fspring =
-            -s * (v * y    - c * log(cosh((y    + h) / c))) - constant;
+            -s * (v * y - c * log(cosh((y + h) / c))) - constant;
     force[1] = Fspring * (1 - get_dissipation() * vel[1]);
 
     // Friction force.
@@ -163,7 +188,7 @@ SimTK::Vec3 MeyerFregly2016Force::calcContactForceOnStation(
             sqrt(vel[0] * vel[0] + vel[2] * vel[2]);
     const SimTK::Real horizontalForce = force[1] * (
             get_dynamic_friction() * 
-            tanh(slidingVelocity /  get_latch_velocity()) + 
+            tanh(slidingVelocity / get_latch_velocity()) + 
             get_viscous_friction() * slidingVelocity
     );
     
