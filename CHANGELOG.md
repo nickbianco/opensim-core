@@ -28,6 +28,8 @@ v4.6
 - Removed the following deprecated methods from `ContactGeometry`: `getLocation()`, `setLocation()`, `getOrientation()`, `setOrientation()`, `getBody()`, and `setBody()`. (#4115)
 - Fixed `OpenSim::Marker::generateDecorations` to account for markers that are attached to bodies via other frames (#4144).
 - Added the scripting-friendly accessors `SpatialTransform::setTransformAxis()` and `CustomJoint::setSpatialTransform()`. (#4168)
+- Completed the implementation of the `MeyerFregly2016Force` class to support NMSM Pipeline-equivalent contact models in Moco. (#3877)
+- The experimental classes `AckermannVanDenBogert2010Force` and `EspositoMiller2018Force` have been removed. (#3877)
 
 
 v4.5.2
