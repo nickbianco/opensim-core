@@ -58,7 +58,6 @@
 #include "MocoStudyFactory.h"
 #include "MocoTrack.h"
 #include "MocoTrajectory.h"
-#include "MocoTropterSolver.h"
 #include "MocoUtilities.h"
 #include "MocoWeightSet.h"
 #include "ModelOperatorsDGF.h"

@@ -32,7 +32,7 @@ using Catch::Approx;
 using Catch::Matchers::ContainsSubstring;
 
 TEMPLATE_TEST_CASE("Sliding mass with PrescribedController", "",
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
 
     // Solve a sliding mass problem and store the results.
     TimeSeriesTable controlsTable;
@@ -335,7 +335,7 @@ TEST_CASE("MocoTrajectory::generateControlsFromModelControllers()") {
 }
 
 TEMPLATE_TEST_CASE("Triple pendulum with synergy-like InputController", "",
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
     Model model = createControlledTriplePendulumModel();
     model.initSystem();
 
@@ -393,7 +393,7 @@ TEMPLATE_TEST_CASE("Triple pendulum with synergy-like InputController", "",
 }
 
 TEMPLATE_TEST_CASE("Triple pendulum with disabled InputController", "", 
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
     Model model = createControlledTriplePendulumModel(false);
     MocoStudy study = createTriplePendulumMocoStudy<TestType>(model);
     MocoSolution solution = study.solve();
@@ -447,7 +447,7 @@ TEST_CASE("Incorrect Input control info") {
 }
 
 TEMPLATE_TEST_CASE("MocoControlGoal: ignoring Input controls", "",
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
     Model model = createControlledTriplePendulumModel();
     // Must also ignore the controlled actuators to get an objective value of 0.
     bool ignoreControlledActuators = true;
@@ -461,7 +461,7 @@ TEMPLATE_TEST_CASE("MocoControlGoal: ignoring Input controls", "",
 }
 
 TEMPLATE_TEST_CASE("MocoControlBoundConstraint with Input controls", "",
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
     Model model = createControlledTriplePendulumModel();
     MocoStudy study = createTriplePendulumMocoStudy<TestType>(model);
     auto& problem = study.updProblem();
@@ -482,7 +482,7 @@ TEMPLATE_TEST_CASE("MocoControlBoundConstraint with Input controls", "",
 }
 
 TEMPLATE_TEST_CASE("MocoControlTrackingGoal with Input controls", "",
-        MocoCasADiSolver, MocoTropterSolver) {
+        MocoCasADiSolver) {
     Model model = createControlledTriplePendulumModel();
     MocoStudy study = createTriplePendulumMocoStudy<TestType>(model);
 
