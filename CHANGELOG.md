@@ -81,6 +81,7 @@ v4.6
   Tropter-related dependencies have been removed: `adolc`, `colpack`, and `eigen`. (#3988)
 - `OpenSim::Mesh` now retains a reference-counted copy of the mesh data when it's copied, which should make
   copying + re-finalizing `OpenSim::Model`s faster (#4010).
+- Completed the implementation of the `MeyerFregly2016Force` included in the `StationPlaneContactForce` class to support NMSM Pipeline-equivalent contact models in Moco. (#3877)
 
 
 v4.5.1
