@@ -68,6 +68,7 @@
 #include "Model/PointToPointSpring.h"
 #include "Model/ExpressionBasedPointToPointForce.h"
 #include "Model/PathSpring.h"
+#include "Model/ExpressionBasedPathForce.h"
 #include "Model/BushingForce.h"
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
@@ -269,6 +270,7 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( PointToPointSpring() );
     Object::registerType( ExpressionBasedPointToPointForce() );
     Object::registerType( PathSpring() );
+    Object::registerType( ExpressionBasedPathForce() );
     Object::registerType( BushingForce() );
     Object::registerType( FunctionBasedBushingForce() );
     Object::registerType( ExpressionBasedBushingForce() );
