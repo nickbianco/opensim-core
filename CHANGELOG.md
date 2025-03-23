@@ -88,6 +88,7 @@ v4.6
   other path-based force elements dependent on a user-provided expression. (#4035)
 - Fixed a bug where `DeGrooteFregly2016Muscle::getBoundsNormalizedFiberLength()` was returning
   tendon force bounds rather than fiber length bounds. (#4040)
+- Completed the implementation of the `MeyerFregly2016Force` included in the `StationPlaneContactForce` class to support NMSM Pipeline-equivalent contact models in Moco. (#3877)
 
 
 v4.5.1
