@@ -56,7 +56,7 @@ void HyfydyMuscle::constructProperties() {
     constructProperty_activation_rate(100.0);
     constructProperty_deactivation_rate(25.0);
     constructProperty_default_activation(0.5);
-    constructProperty_fiber_damping(0.0);
+    constructProperty_fiber_damping(0.1);
     constructProperty_ignore_passive_fiber_force(false);
 }
 
@@ -83,12 +83,6 @@ void HyfydyMuscle::extendFinalizeFromProperties() {
             "%s: deactivation_rate must be greater than zero, "
             "but it is %g.",
             getName().c_str(), get_deactivation_rate());
-
-    SimTK_ERRCHK2_ALWAYS(get_default_activation() > 0,
-            "HyfydyMuscle::extendFinalizeFromProperties",
-            "%s: default_activation must be greater than zero, "
-            "but it is %g.",
-            getName().c_str(), get_default_activation());
 
     SimTK_ERRCHK2_ALWAYS(get_fiber_damping() >= 0,
             "HyfydyMuscle::extendFinalizeFromProperties",
@@ -145,10 +139,39 @@ void HyfydyMuscle::computeStateVariableDerivatives(
     }
 }
 
-double HyfydyMuscle::computeActuation(const SimTK::State& s) const {
-    const auto& mdi = getMuscleDynamicsInfo(s);
-    setActuation(s, mdi.tendonForce);
-    return mdi.tendonForce;
+double HyfydyMuscle::computeActuation(const SimTK::State& s) const {    
+    const auto& path = getPath();
+    const auto& length = path.getLength(s);
+    const auto& lengtheningSpeed = path.getLengtheningSpeed(s);
+    const auto& activation = getActivation(s);
+
+    const SimTK::Real fiberLengthAlongTendon = 
+            length - get_tendon_slack_length();
+    const SimTK::Real fiberLength = sqrt(
+            SimTK::square(fiberLengthAlongTendon) + getSquareFiberWidth());
+    const SimTK::Real cosPennationAngle = 
+            fiberLengthAlongTendon / fiberLength;
+    const SimTK::Real normFiberLength = 
+            fiberLength / get_optimal_fiber_length();
+    const SimTK::Real normFiberVelocity = 
+            lengtheningSpeed / getMaxContractionVelocityInMetersPerSecond();
+    const SimTK::Real activeForceLengthMultiplier = 
+            calcActiveForceLengthMultiplier(normFiberLength);
+    const SimTK::Real forceVelocityMultiplier = 
+            calcForceVelocityMultiplier(normFiberVelocity);
+    const SimTK::Real normPassiveFiberForce = 
+            calcPassiveForceMultiplier(normFiberLength);
+    SimTK::Real activeFiberForce;
+    SimTK::Real conPassiveFiberForce;
+    SimTK::Real nonConPassiveFiberForce;
+    SimTK::Real totalFiberForce;
+    calcFiberForce(activation, activeForceLengthMultiplier, 
+            forceVelocityMultiplier, normPassiveFiberForce, normFiberVelocity, 
+            activeFiberForce, conPassiveFiberForce, nonConPassiveFiberForce, 
+            totalFiberForce);
+
+    const SimTK::Real tendonForce = totalFiberForce * cosPennationAngle;
+    return tendonForce;
 }
 
 void HyfydyMuscle::calcMuscleLengthInfoHelper(

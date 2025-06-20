@@ -18,8 +18,6 @@ endfunction()
 
 MocoAddSandboxExecutable(NAME sandboxSandbox LIB_DEPENDS osimMoco)
 
-MocoAddSandboxExecutable(NAME sandboxGait3D LIB_DEPENDS osimMoco)
-
 # MocoStudy-related.
 MocoAddSandboxExecutable(NAME sandboxContact
         LIB_DEPENDS osimMoco osimAnalyses)
