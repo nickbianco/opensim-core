@@ -40,7 +40,7 @@ ContactHalfSpace::ContactHalfSpace(const SimTK::Vec3& location,
     setNull();
 }
 
-ContactHalfSpace::ContactHalfSpace(const SimTK::Vec3& location, 
+ContactHalfSpace::ContactHalfSpace(const SimTK::Vec3& location,
     const SimTK::Vec3& orientation, const PhysicalFrame& frame,
     const std::string& name) :
         ContactHalfSpace(location, orientation, frame)
@@ -59,7 +59,7 @@ SimTK::ContactGeometry ContactHalfSpace::createSimTKContactGeometryImpl() const
     return SimTK::ContactGeometry::HalfSpace();
 }
 
-void ContactHalfSpace::generateDecorationsImpl(bool fixed, 
+void ContactHalfSpace::generateDecorationsImpl(bool fixed,
     const ModelDisplayHints& hints,
     const SimTK::State& s,
     SimTK::Array_<SimTK::DecorativeGeometry>& geometry) const
