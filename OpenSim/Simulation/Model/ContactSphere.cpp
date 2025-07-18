@@ -7,7 +7,7 @@
  * National Institutes of Health (U54 GM072970, R24 HD065690) and by DARPA    *
  * through the Warrior Web program.                                           *
  *                                                                            *
- * Copyright (c) 2005-2017 Stanford University and the Authors                *
+ * Copyright (c) 2005-2025 Stanford University and the Authors                *
  * Author(s): Peter Eastman                                                   *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may    *
@@ -20,12 +20,14 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
-#include "Model.h"
+
 #include "ContactSphere.h"
-using SimTK::Transform;
 
-namespace OpenSim {
+using namespace OpenSim;
 
+//=============================================================================
+// CONSTRUCTION
+//=============================================================================
 ContactSphere::ContactSphere() : ContactGeometry()
 {
     setNull();
@@ -58,7 +60,9 @@ void ContactSphere::constructProperties()
     constructProperty_radius(0);
 }
 
-
+//=============================================================================
+// ACCESSORS
+//=============================================================================
 double ContactSphere::getRadius() const
 {
     return get_radius();
@@ -69,42 +73,10 @@ void ContactSphere::setRadius(double radius)
     set_radius(radius);
 }
 
-SimTK::ContactGeometry ContactSphere::createSimTKContactGeometry() const
+//=============================================================================
+// CONTACT GEOMETRY INTERFACE
+//=============================================================================
+SimTK::ContactGeometry ContactSphere::createSimTKContactGeometryImpl() const
 {
     return SimTK::ContactGeometry::Sphere(get_radius());
 }
-
-
-//=============================================================================
-// VISUALIZER GEOMETRY
-//=============================================================================
-void ContactSphere::generateDecorations(bool fixed, const ModelDisplayHints& hints, 
-    const SimTK::State& s, SimTK::Array_<SimTK::DecorativeGeometry>& geometry) const
-{
-    Super::generateDecorations(fixed, hints, s, geometry); 
-
-    // There is no fixed geometry to generate here.
-    if (fixed) { return; }
-
-    // Model-wide hints indicate that contact geometry shouldn't be shown.
-    if (!hints.get_show_contact_geometry()) { return; }
-
-    // The decoration has been toggled off by its `Appearance` block.
-    if (!get_Appearance().get_visible())  { return; }
-
-    // B: base Frame (Body or Ground)
-    // F: PhysicalFrame that this ContactGeometry is connected to
-    // P: the frame defined (relative to F) by the location and orientation
-    //    properties.
-    const auto& X_BF = getFrame().findTransformInBaseFrame();
-    const auto& X_FP = getTransform();
-    const auto X_BP = X_BF * X_FP;
-    geometry.push_back(SimTK::DecorativeSphere(getRadius()).setScale(1)
-                           .setTransform(X_BP)
-                           .setRepresentation(get_Appearance().get_representation())
-                           .setBodyId(getFrame().getMobilizedBodyIndex())
-                           .setColor(get_Appearance().get_color())
-                           .setOpacity(get_Appearance().get_opacity()));
-}
-
-} // end of namespace OpenSim

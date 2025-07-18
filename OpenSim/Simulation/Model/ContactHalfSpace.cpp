@@ -53,7 +53,7 @@ void ContactHalfSpace::setNull()
 }
 
 
-SimTK::ContactGeometry ContactHalfSpace::createSimTKContactGeometry() const
+SimTK::ContactGeometry ContactHalfSpace::createSimTKContactGeometryImpl() const
 {
     return SimTK::ContactGeometry::HalfSpace();
 }

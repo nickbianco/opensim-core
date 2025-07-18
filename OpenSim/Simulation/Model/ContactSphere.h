@@ -9,7 +9,7 @@
  * National Institutes of Health (U54 GM072970, R24 HD065690) and by DARPA    *
  * through the Warrior Web program.                                           *
  *                                                                            *
- * Copyright (c) 2005-2017 Stanford University and the Authors                *
+ * Copyright (c) 2005-2025 Stanford University and the Authors                *
  * Author(s): Peter Eastman                                                   *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may    *
@@ -22,13 +22,15 @@
  * See the License for the specific language governing permissions and        *
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
-// INCLUDE
+
 #include "ContactGeometry.h"
 
 namespace OpenSim {
 
 /**
- * This class represents a spherical object for use in contact modeling.
+ * \section ContactSphere
+ * A class that represents a spherical object for use in contact modeling and
+ * path wrapping.
  *
  * @author Peter Eastman
  */
@@ -41,19 +43,20 @@ OpenSim_DECLARE_CONCRETE_OBJECT(ContactSphere, ContactGeometry);
     OpenSim_DECLARE_PROPERTY(radius, double,
             "Radius of the sphere (default: 0).");
 
+public:
 //=============================================================================
 // METHODS
 //=============================================================================
-public:
     // CONSTRUCTION
     /**
      * Construct an empty, uninitialized ContactSphere.
      */
     ContactSphere();
+
     /**
      * Construct a ContactSphere.
      *
-     * @param radius       the radius of the sphere
+     * @param radius       the radius of the sphere.
      * @param location     the location of the center of the sphere expressed
      *                     in `frame`.
      * @param frame        the PhysicalFrame this geometry is attached to;
@@ -62,23 +65,23 @@ public:
      */
     ContactSphere(double radius, const SimTK::Vec3& location,
             const PhysicalFrame& frame);
+
     /**
      * Construct a ContactSphere.
      *
-     * @param radius       the radius of the sphere
+     * @param radius       the radius of the sphere.
      * @param location     the location of the center of the sphere expressed
      *                     in `frame`.
      * @param frame        the PhysicalFrame this geometry is attached to;
      *                     this constructor connects this ContactSphere to
      *                     the provided `frame`.
-     * @param name         the name of this object
+     * @param name         the name of this object.
      */
     ContactSphere(double radius, const SimTK::Vec3& location,
             const PhysicalFrame& frame, const std::string& name);
 
-    SimTK::ContactGeometry createSimTKContactGeometry() const override;
-
-    // ACCESSORS
+    /** @name Accessors */
+    // @{
     /**
      * Get the radius of the sphere.
      */
@@ -87,21 +90,18 @@ public:
      * %Set the radius of the sphere.
      */
     void setRadius(double radius);
+    // @}
 
-    // VISUALIZATION
-    void generateDecorations(bool fixed, const ModelDisplayHints& hints,
-        const SimTK::State& s,
-        SimTK::Array_<SimTK::DecorativeGeometry>& geometry) const override;
 private:
+    // CONTACT GEOMETRY INTERFACE
+    SimTK::ContactGeometry createSimTKContactGeometryImpl() const override;
+
     // INITIALIZATION
     void setNull();
     void constructProperties();
 
-//=============================================================================
-};  // END of class ContactSphere
-//=============================================================================
-//=============================================================================
+};
 
-} // end of namespace OpenSim
+} // namespace OpenSim
 
 #endif // OPENSIM_CONTACT_SPHERE_H_ 
