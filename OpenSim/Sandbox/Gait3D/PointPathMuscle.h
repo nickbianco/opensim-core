@@ -96,7 +96,7 @@ private:
     constexpr static SimTK::Real r2 = 1.80528;
     // Fiber active force-velocity curve.
     constexpr static SimTK::Real cV1 = 0.227;
-    constexpr static SimTK::Real cV2 = 0.5;
+    constexpr static SimTK::Real cV2 = 0.110;
     constexpr static SimTK::Real Fvmax = 1.6;
     // Fiber passive force-length curve.
     constexpr static SimTK::Real cP1 = 1.08027;

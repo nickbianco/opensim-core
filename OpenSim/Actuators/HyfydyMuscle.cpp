@@ -172,6 +172,10 @@ double HyfydyMuscle::computeActuation(const SimTK::State& s) const {
 
     const SimTK::Real tendonForce = totalFiberForce * cosPennationAngle;
     return tendonForce;
+
+    // const auto& mdi = getMuscleDynamicsInfo(s);
+    // setActuation(s, mdi.tendonForce);
+    // return mdi.tendonForce;
 }
 
 void HyfydyMuscle::calcMuscleLengthInfoHelper(

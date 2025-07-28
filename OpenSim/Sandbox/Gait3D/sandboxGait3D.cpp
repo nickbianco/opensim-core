@@ -21,9 +21,6 @@
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
 
-// This file provides a way to easily prototype or test temporary snippets of
-// code during development.
-
 #include <OpenSim/Moco/osimMoco.h>
 #include <OpenSim/Simulation/VisualizerUtilities.h>
 #include <OpenSim/Actuators/HyfydyMuscle.h>
@@ -54,7 +51,7 @@ enum Contact {Heel=0, LateralToe, MedialToe};
 
 enum MuscleModelType {PointPath=0, Hyfydy, DeGrooteFregly};
 
-enum PathType {Scholz2015=0, PointBased};
+enum PathType {Scholz2015=0, PointBased, Geometry};
 
 // Data arrays
 SimTK::Real massData[] = {1.25, 1.25, 3.7075, 3.7075, 9.3014, 9.3014, 
@@ -90,7 +87,7 @@ MuscleType* createMuscle(Model& model, const std::string& name,
     muscle->set_pennation_angle_at_optimal(pennationAngle);
     muscle->set_ignore_tendon_compliance(true);
     muscle->set_ignore_activation_dynamics(true);
-    muscle->set_default_activation(0.0);
+    muscle->set_default_activation(0.01);
     model.addForce(muscle);
     return muscle;
 }
@@ -109,7 +106,7 @@ DeGrooteFregly2016Muscle* createMuscle<DeGrooteFregly2016Muscle>(
     muscle->set_pennation_angle_at_optimal(pennationAngle);
     muscle->set_ignore_tendon_compliance(true);
     muscle->set_ignore_activation_dynamics(true);
-    muscle->set_default_activation(0.0);
+    muscle->set_default_activation(0.01);
     model.addForce(muscle);
     return muscle;
 }
@@ -146,6 +143,14 @@ void addPathToMuscle(MuscleType* muscle, const std::string& name,
         
         for (size_t i = 0; i < points.size(); ++i) {
             path->addStation(name + "_point_" + std::to_string(i), 
+                          *points[i].first, points[i].second);
+        }
+        muscle->setPath(path);
+    } else if (pathType == PathType::Geometry) {
+        auto* path = new GeometryPath();
+        path->setName(name);
+        for (size_t i = 0; i < points.size(); ++i) {
+            path->appendNewPathPoint(name + "_point_" + std::to_string(i), 
                           *points[i].first, points[i].second);
         }
         muscle->setPath(path);
@@ -681,6 +686,8 @@ int main(int argc, char* argv[]) {
                 pathType = Scholz2015;
             } else if (pathTypeStr == "pointbased") {
                 pathType = PointBased;
+            } else if (pathTypeStr == "geometry") {
+                pathType = PathType::Geometry;
             } else {
                 std::cerr << "Error: Unknown path type '" << pathTypeStr << "'\n";
                 std::cerr << "Valid options: scholz2015, pointbased\n";
@@ -757,10 +764,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Using Scholz2015GeometryPath\n";
     }
     
-    // Display control value if using PointPathMuscle
-    if (usePointPathMuscle) {
-        std::cout << "Using control value: " << controlValue << "\n";
-    }
+    // Display control value
+    std::cout << "Using control value: " << controlValue << "\n";
     
     // Display speed initialization setting
     if (randomizeSpeeds) {
@@ -1012,89 +1017,86 @@ int main(int argc, char* argv[]) {
                rightContactPoints[1], transform, params);
     addContact(model, "right_medialToe_contact", rightFoot, 
                rightContactPoints[2], transform, params);
-
-    // Additional contact points for torso, pelvis, and joints
-    // ------------------------------------------------------
     
-    // Torso contact points (around the body)
-    addContact(model, "torso_front_contact", torso, 
-               SimTK::Vec3(0, 0.1, 0), transform, params);
-    addContact(model, "torso_back_contact", torso, 
-               SimTK::Vec3(0, -0.1, 0), transform, params);
-    addContact(model, "torso_left_contact", torso, 
-               SimTK::Vec3(0, 0, 0.05), transform, params);
-    addContact(model, "torso_right_contact", torso, 
-               SimTK::Vec3(0, 0, -0.05), transform, params);
+    // // Torso contact points (around the body)
+    // addContact(model, "torso_front_contact", torso, 
+    //            SimTK::Vec3(0, 0.1, 0), transform, params);
+    // addContact(model, "torso_back_contacpt", torso, 
+    //            SimTK::Vec3(0, -0.1, 0), transform, params);
+    // addContact(model, "torso_left_contact", torso, 
+    //            SimTK::Vec3(0, 0, 0.05), transform, params);
+    // addContact(model, "torso_right_contact", torso, 
+    //            SimTK::Vec3(0, 0, -0.05), transform, params);
     
-    // Pelvis contact points (around the pelvis)
-    addContact(model, "pelvis_front_contact", pelvis, 
-               SimTK::Vec3(0, 0.05, 0), transform, params);
-    addContact(model, "pelvis_back_contact", pelvis, 
-               SimTK::Vec3(0, -0.05, 0), transform, params);
-    addContact(model, "pelvis_left_contact", pelvis, 
-               SimTK::Vec3(0, 0, 0.06), transform, params);
-    addContact(model, "pelvis_right_contact", pelvis, 
-               SimTK::Vec3(0, 0, -0.06), transform, params);
+    // // Pelvis contact points (around the pelvis)
+    // addContact(model, "pelvis_front_contact", pelvis, 
+    //            SimTK::Vec3(0, 0.05, 0), transform, params);
+    // addContact(model, "pelvis_back_contact", pelvis, 
+    //            SimTK::Vec3(0, -0.05, 0), transform, params);
+    // addContact(model, "pelvis_left_contact", pelvis, 
+    //            SimTK::Vec3(0, 0, 0.06), transform, params);
+    // addContact(model, "pelvis_right_contact", pelvis, 
+    //            SimTK::Vec3(0, 0, -0.06), transform, params);
     
-    // Left hip contact points
-    addContact(model, "left_hip_front_contact", leftThigh, 
-               SimTK::Vec3(0, 0.15, 0), transform, params);
-    addContact(model, "left_hip_back_contact", leftThigh, 
-               SimTK::Vec3(0, 0.19, 0), transform, params);
-    addContact(model, "left_hip_medial_contact", leftThigh, 
-               SimTK::Vec3(0, 0.17, 0.02), transform, params);
-    addContact(model, "left_hip_lateral_contact", leftThigh, 
-               SimTK::Vec3(0, 0.17, -0.02), transform, params);
+    // // Left hip contact points
+    // addContact(model, "left_hip_front_contact", leftThigh, 
+    //            SimTK::Vec3(0, 0.15, 0), transform, params);
+    // addContact(model, "left_hip_back_contact", leftThigh, 
+    //            SimTK::Vec3(0, 0.19, 0), transform, params);
+    // addContact(model, "left_hip_medial_contact", leftThigh, 
+    //            SimTK::Vec3(0, 0.17, 0.02), transform, params);
+    // addContact(model, "left_hip_lateral_contact", leftThigh, 
+    //            SimTK::Vec3(0, 0.17, -0.02), transform, params);
     
-    // Right hip contact points
-    addContact(model, "right_hip_front_contact", rightThigh, 
-               SimTK::Vec3(0, 0.15, 0), transform, params);
-    addContact(model, "right_hip_back_contact", rightThigh, 
-               SimTK::Vec3(0, 0.19, 0), transform, params);
-    addContact(model, "right_hip_medial_contact", rightThigh, 
-               SimTK::Vec3(0, 0.17, -0.02), transform, params);
-    addContact(model, "right_hip_lateral_contact", rightThigh, 
-               SimTK::Vec3(0, 0.17, 0.02), transform, params);
+    // // Right hip contact points
+    // addContact(model, "right_hip_front_contact", rightThigh, 
+    //            SimTK::Vec3(0, 0.15, 0), transform, params);
+    // addContact(model, "right_hip_back_contact", rightThigh, 
+    //            SimTK::Vec3(0, 0.19, 0), transform, params);
+    // addContact(model, "right_hip_medial_contact", rightThigh, 
+    //            SimTK::Vec3(0, 0.17, -0.02), transform, params);
+    // addContact(model, "right_hip_lateral_contact", rightThigh, 
+    //            SimTK::Vec3(0, 0.17, 0.02), transform, params);
     
-    // Left knee contact points
-    addContact(model, "left_knee_front_contact", leftShank, 
-               SimTK::Vec3(0, 0.15, 0), transform, params);
-    addContact(model, "left_knee_back_contact", leftShank, 
-               SimTK::Vec3(0, 0.22, 0), transform, params);
-    addContact(model, "left_knee_medial_contact", leftShank, 
-               SimTK::Vec3(0, 0.1867, 0.015), transform, params);
-    addContact(model, "left_knee_lateral_contact", leftShank, 
-               SimTK::Vec3(0, 0.1867, -0.015), transform, params);
+    // // Left knee contact points
+    // addContact(model, "left_knee_front_contact", leftShank, 
+    //            SimTK::Vec3(0, 0.15, 0), transform, params);
+    // addContact(model, "left_knee_back_contact", leftShank, 
+    //            SimTK::Vec3(0, 0.22, 0), transform, params);
+    // addContact(model, "left_knee_medial_contact", leftShank, 
+    //            SimTK::Vec3(0, 0.1867, 0.015), transform, params);
+    // addContact(model, "left_knee_lateral_contact", leftShank, 
+    //            SimTK::Vec3(0, 0.1867, -0.015), transform, params);
     
-    // Right knee contact points
-    addContact(model, "right_knee_front_contact", rightShank, 
-               SimTK::Vec3(0, 0.15, 0), transform, params);
-    addContact(model, "right_knee_back_contact", rightShank, 
-               SimTK::Vec3(0, 0.22, 0), transform, params);
-    addContact(model, "right_knee_medial_contact", rightShank, 
-               SimTK::Vec3(0, 0.1867, -0.015), transform, params);
-    addContact(model, "right_knee_lateral_contact", rightShank, 
-               SimTK::Vec3(0, 0.1867, 0.015), transform, params);
+    // // Right knee contact points
+    // addContact(model, "right_knee_front_contact", rightShank, 
+    //            SimTK::Vec3(0, 0.15, 0), transform, params);
+    // addContact(model, "right_knee_back_contact", rightShank, 
+    //            SimTK::Vec3(0, 0.22, 0), transform, params);
+    // addContact(model, "right_knee_medial_contact", rightShank, 
+    //            SimTK::Vec3(0, 0.1867, -0.015), transform, params);
+    // addContact(model, "right_knee_lateral_contact", rightShank, 
+    //            SimTK::Vec3(0, 0.1867, 0.015), transform, params);
     
-    // Left ankle contact points
-    addContact(model, "left_ankle_front_contact", leftFoot, 
-               SimTK::Vec3(-0.03, 0.012, 0.008), transform, params);
-    addContact(model, "left_ankle_back_contact", leftFoot, 
-               SimTK::Vec3(-0.07, 0.012, 0.008), transform, params);
-    addContact(model, "left_ankle_medial_contact", leftFoot, 
-               SimTK::Vec3(-0.05123, 0.012, 0.013), transform, params);
-    addContact(model, "left_ankle_lateral_contact", leftFoot, 
-               SimTK::Vec3(-0.05123, 0.012, 0.003), transform, params);
+    // // Left ankle contact points
+    // addContact(model, "left_ankle_front_contact", leftFoot, 
+    //            SimTK::Vec3(-0.03, 0.012, 0.008), transform, params);
+    // addContact(model, "left_ankle_back_contact", leftFoot, 
+    //            SimTK::Vec3(-0.07, 0.012, 0.008), transform, params);
+    // addContact(model, "left_ankle_medial_contact", leftFoot, 
+    //            SimTK::Vec3(-0.05123, 0.012, 0.013), transform, params);
+    // addContact(model, "left_ankle_lateral_contact", leftFoot, 
+    //            SimTK::Vec3(-0.05123, 0.012, 0.003), transform, params);
     
-    // Right ankle contact points
-    addContact(model, "right_ankle_front_contact", rightFoot, 
-               SimTK::Vec3(-0.03, 0.012, -0.008), transform, params);
-    addContact(model, "right_ankle_back_contact", rightFoot, 
-               SimTK::Vec3(-0.07, 0.012, -0.008), transform, params);
-    addContact(model, "right_ankle_medial_contact", rightFoot, 
-               SimTK::Vec3(-0.05123, 0.012, -0.013), transform, params);
-    addContact(model, "right_ankle_lateral_contact", rightFoot, 
-               SimTK::Vec3(-0.05123, 0.012, -0.003), transform, params);
+    // // Right ankle contact points
+    // addContact(model, "right_ankle_front_contact", rightFoot, 
+    //            SimTK::Vec3(-0.03, 0.012, -0.008), transform, params);
+    // addContact(model, "right_ankle_back_contact", rightFoot, 
+    //            SimTK::Vec3(-0.07, 0.012, -0.008), transform, params);
+    // addContact(model, "right_ankle_medial_contact", rightFoot, 
+    //            SimTK::Vec3(-0.05123, 0.012, -0.013), transform, params);
+    // addContact(model, "right_ankle_lateral_contact", rightFoot, 
+    //            SimTK::Vec3(-0.05123, 0.012, -0.003), transform, params);
 
     // Controller
     // ---------
@@ -1167,11 +1169,32 @@ int main(int argc, char* argv[]) {
     // --------
     if (visualize) {
         TimeSeriesTable table = manager.getStatesTable();
-        std::string statesFileName = fmt::format("states_{}_{}_control{}_path{}.sto", 
-                                                 muscleModel, 
+        std::string pathTypeStr;
+        if (pathType == Scholz2015) {
+            pathTypeStr = "_scholz2015path";
+        } else if (pathType == PointBased) {
+            pathTypeStr = "_pointbasedpath";
+        } else if (pathType == PathType::Geometry) {
+            pathTypeStr = "_geometrypath";
+        }
+
+        std::string muscleModelStr;
+        if (usePointPathMuscle) {
+            muscleModelStr = "pointpath";
+            pathTypeStr = "";
+        } else {
+            if (muscleModel == Hyfydy) {
+                muscleModelStr = "hyfydy";
+            } else {
+                muscleModelStr = "degroote";
+            }
+        }
+
+        std::string statesFileName = fmt::format("states_{}_{}_control{}{}.sto", 
+                                                 muscleModelStr, 
                                                  randomizeSpeeds ? "random" : "zero",
                                                  controlValue,
-                                                 pathType);
+                                                 pathTypeStr);
         STOFileAdapter::write(table, statesFileName);
 
         VisualizerUtilities::showMotion(model, table);
