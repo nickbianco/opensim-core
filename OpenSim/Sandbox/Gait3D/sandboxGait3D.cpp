@@ -132,20 +132,22 @@ void createMuscles(Model& model, Body* pelvis, Body* torso, Body* leftThigh,
 
     // Wrap obstacles
     // --------------
+    // TODO: attaching obstacles to the pelvis leads to strange behavior in 
+    // simulation (e.g., the model getting "dragged" around by invisible forces).
     if (useObstacles) {
-        auto* glut_max_r_obstacle = new ContactCylinder(0.03,
-            SimTK::Vec3(-0.04, -0.085, 0.09), 
+        auto* glut_max_r_obstacle = new ContactCylinder(0.04,
+            SimTK::Vec3(-0.03, 0.15, 0.025), 
             SimTK::Vec3(-0.4, 0.39, 0.), 
-            *pelvis);
+            *rightThigh);
         glut_max_r_obstacle->setName("glut_max_r_obstacle");
-        pelvis->addComponent(glut_max_r_obstacle);
+        rightThigh->addComponent(glut_max_r_obstacle);
 
-        auto* glut_max_l_obstacle = new ContactCylinder(0.03,
-            SimTK::Vec3(-0.04, -0.085, -0.09), 
+        auto* glut_max_l_obstacle = new ContactCylinder(0.04,
+            SimTK::Vec3(-0.03, 0.15, -0.025), 
             SimTK::Vec3(0.4, -0.39, 0.), 
-            *pelvis);
+            *leftThigh);
         glut_max_l_obstacle->setName("glut_max_l_obstacle");
-        pelvis->addComponent(glut_max_l_obstacle);
+        leftThigh->addComponent(glut_max_l_obstacle);
 
         auto* gastroc_r_obstacle = new ContactCylinder(0.065,
             SimTK::Vec3(-0.00861, 0.05, 0.), 
@@ -207,8 +209,8 @@ void createMuscles(Model& model, Body* pelvis, Body* torso, Body* leftThigh,
     glut_max_r_path.setInsertion(*rightThigh, SimTK::Vec3(-0.0156, 0.0684, 0.0419));
     if (useObstacles) {
         glut_max_r_path.addObstacle(
-            pelvis->getComponent<ContactGeometry>("glut_max_r_obstacle"), 
-            SimTK::Vec3(-0.025, 0., 0.));
+            rightThigh->getComponent<ContactGeometry>("glut_max_r_obstacle"), 
+            SimTK::Vec3(-0.04, 0., 0.));
     } else {
         glut_max_r_path.addViaPoint(*pelvis, SimTK::Vec3(-0.0669, -0.052, 0.0914));
         glut_max_r_path.addViaPoint(*rightThigh, SimTK::Vec3(-0.0426, 0.117, 0.0293));
@@ -317,8 +319,8 @@ void createMuscles(Model& model, Body* pelvis, Body* torso, Body* leftThigh,
     glut_max_l_path.setInsertion(*leftThigh, SimTK::Vec3(-0.0156, 0.0684, -0.0419));
     if (useObstacles) {
         glut_max_l_path.addObstacle(
-            pelvis->getComponent<ContactGeometry>("glut_max_l_obstacle"), 
-            SimTK::Vec3(-0.025, 0., 0.));
+            leftThigh->getComponent<ContactGeometry>("glut_max_l_obstacle"), 
+            SimTK::Vec3(-0.04, 0., 0.));
     } else {
         glut_max_l_path.addViaPoint(*pelvis, SimTK::Vec3(-0.0669, -0.052, -0.0914));
         glut_max_l_path.addViaPoint(*leftThigh, SimTK::Vec3(-0.0426, 0.117, -0.0293));
@@ -616,7 +618,6 @@ int main(int argc, char* argv[]) {
                                             leftThigh, leftShank, leftFoot, 
                                             rightThigh, rightShank, 
                                             rightFoot, useObstacles);
-
 
     // Joint damping
     // -------------

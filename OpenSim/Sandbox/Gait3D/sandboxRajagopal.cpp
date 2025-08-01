@@ -87,10 +87,12 @@ int main(int argc, char* argv[]) {
         std::cout << "Using zero initial speeds\n";
     }
 
+    // OpenSim::Logger::setLevel(Logger::Level::Error);
+
     // Load the model
     ModelProcessor modelProcessor = 
         ModelProcessor("RajagopalContact.osim") |
-        ModOpReplaceMusclesWithDeGrooteFregly2016() |
+        // ModOpReplaceMusclesWithDeGrooteFregly2016() |
         ModOpIgnoreTendonCompliance(); 
     Model model = modelProcessor.process();
 

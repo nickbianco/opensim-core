@@ -2,7 +2,7 @@
 # This file builds the sandboxGait3D executable with custom components
 
 file(GLOB GAIT3D_FILES "MobilityLinearDamper.cpp" "MobilityLinearStop.cpp" "DiscreteController.cpp" "Rajagopal22Muscles.cpp" "Rajagopal22MusclesContact.osim")
-file(GLOB TO_COMPILE "sandboxGait3D.cpp" "sandboxRajagopal.cpp")
+file(GLOB TO_COMPILE "sandboxGait3D.cpp" "sandboxRajagopal.cpp" "sandboxDoublePendulum.cpp")
 
 # These executables are *not* tests.
 
