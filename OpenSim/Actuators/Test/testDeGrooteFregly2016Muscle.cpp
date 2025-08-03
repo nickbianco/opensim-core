@@ -1202,15 +1202,13 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
 
     SECTION("printCurvesToSTOFiles") { muscle.printCurvesToSTOFiles(); }
 
-    const double fl = 0.9994334614323869;
     SECTION("Curve values") {
         CHECK(muscle.calcPassiveForceMultiplier(1) ==
                 Approx(0.00382044).epsilon(1e-4));
         CHECK(muscle.calcPassiveForceMultiplier(0.2) ==
                 Approx(0.0000001837).epsilon(1e-4));
 
-        CHECK(muscle.calcActiveForceLengthMultiplier(1) == 
-                Approx(fl).epsilon(1e-4));
+        CHECK(muscle.calcActiveForceLengthMultiplier(1) == 1.0);
         CHECK(muscle.calcForceVelocityMultiplier(-1) ==
                 Approx(0.0004676337).epsilon(1e-4));
         CHECK(muscle.calcForceVelocityMultiplier(0) == 
@@ -1245,8 +1243,7 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
             CHECK(muscle.getTendonStrain(state) == 0.0);
             CHECK(muscle.getPassiveForceMultiplier(state) ==
                     Approx(muscle.calcPassiveForceMultiplier(1.0)));
-            CHECK(muscle.getActiveForceLengthMultiplier(state) == 
-                    Approx(fl).epsilon(1e-4));
+            CHECK(muscle.getActiveForceLengthMultiplier(state) == 1.0);
             const auto fiberPotentialEnergy =
                     muscle.calcPassiveForceMultiplierIntegral(1.0) *
                     muscle.get_optimal_fiber_length() *
@@ -1265,15 +1262,13 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
             CHECK(muscle.getFiberVelocityAlongTendon(state) == 0);
             CHECK(muscle.getPennationAngularVelocity(state) == 0);
             CHECK(muscle.getTendonVelocity(state) == 0);
-            CHECK(muscle.getForceVelocityMultiplier(state) == 
-                    Approx(1.0005129).epsilon(1e-4));
+            CHECK(muscle.getForceVelocityMultiplier(state) == 1.0);
 
             model.realizeDynamics(state);
             const auto Fmax = muscle.getMaxIsometricForce();
             const auto fpass = muscle.calcPassiveForceMultiplier(1.0);
-            CHECK(muscle.getActiveFiberForce(state) == Approx(fl * Fmax));
-            CHECK(muscle.getActiveFiberForceAlongTendon(state) == 
-                    Approx(fl*Fmax));
+            CHECK(muscle.getActiveFiberForce(state) == Approx(Fmax));
+            CHECK(muscle.getActiveFiberForceAlongTendon(state) == Approx(Fmax));
             CHECK(muscle.getPassiveFiberForce(state) == Approx(Fmax * fpass));
             CHECK(muscle.getPassiveFiberForceAlongTendon(state) ==
                     Approx(Fmax * fpass));
@@ -1284,11 +1279,11 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
             CHECK(muscle.getPassiveFiberDampingForce(state) == 0);
             CHECK(muscle.getPassiveFiberDampingForceAlongTendon(state) == 0);
             const auto fiberForce = Fmax * (1 + fpass);
-            CHECK(muscle.getFiberForce(state) == Approx(fl * fiberForce));
+            CHECK(muscle.getFiberForce(state) == Approx(fiberForce));
             CHECK(muscle.getFiberForceAlongTendon(state) ==
-                    Approx(fl * Fmax * (1 + fpass)));
-            CHECK(muscle.getTendonForce(state) == 
-                    Approx(fl * Fmax * (1 + fpass)));
+                    Approx(Fmax * (1 + fpass)));
+            CHECK(muscle.getTendonForce(state) ==
+                    Approx(Fmax * (1 + fpass)));
 
             FiberForceFunction fiberForceFunc(muscle, state, false);
             SimTK::Differentiator diffFiberStiffness(fiberForceFunc);

@@ -645,11 +645,11 @@ private:
     // rather than the paper supplement. b11 was modified to ensure that
     // f(1) = 1.
     constexpr static double b11 = 0.814483478343008;
-    constexpr static double b21 = 1.055033428970575;
+    constexpr static double b21 = 1.0543666879966989;
     constexpr static double b31 = 0.162384573599574;
     constexpr static double b41 = 0.063303448465465;
     constexpr static double b12 = 0.433004984392647;
-    constexpr static double b22 = 0.716775413397760;
+    constexpr static double b22 = 0.7167756274251487;
     constexpr static double b32 = -0.029947116970696;
     constexpr static double b42 = 0.200356847296188;
     constexpr static double b13 = 0.1;
@@ -681,12 +681,12 @@ private:
 
     // Parameters for the force-velocity curve.
     // ----------------------------------------
-    constexpr static double d1 = -12.4090551101489;
-    constexpr static double d2 = 9.35818070443882;
-    constexpr static double d3 = 7.93116233095206;
-    constexpr static double d4 = 2.70637350085154;
-    constexpr static double d5 = -0.274108493130008;
-    constexpr static double d6 = 8.03512618783281;
+    constexpr static double d1 = -12.401152409545595;
+    constexpr static double d2 = 9.351250953986145;
+    constexpr static double d3 = 7.950374172664825;
+    constexpr static double d4 = 2.7179212777836335;
+    constexpr static double d5 = -0.2770931848597726;
+    constexpr static double d6 = 8.038780873259377;
 
     constexpr static double m_minNormFiberLength = 0.2;
     constexpr static double m_maxNormFiberLength = 1.8;
