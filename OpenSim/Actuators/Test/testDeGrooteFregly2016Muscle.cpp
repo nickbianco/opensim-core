@@ -1209,10 +1209,9 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
                 Approx(0.0000001837).epsilon(1e-4));
 
         CHECK(muscle.calcActiveForceLengthMultiplier(1) == 1.0);
-        CHECK(muscle.calcForceVelocityMultiplier(-1) ==
-                Approx(0.0004676337).epsilon(1e-4));
-        CHECK(muscle.calcForceVelocityMultiplier(0) == 
-                Approx(1.0005129).epsilon(1e-4));
+        CHECK(muscle.calcForceVelocityMultiplier(-1) == 
+                Approx(0.0).margin(1e-9));
+        CHECK(muscle.calcForceVelocityMultiplier(0) == Approx(1.0));
         CHECK(muscle.calcForceVelocityMultiplier(1) ==
                 Approx(1.501928).epsilon(1e-4));
     }
@@ -1262,7 +1261,7 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
             CHECK(muscle.getFiberVelocityAlongTendon(state) == 0);
             CHECK(muscle.getPennationAngularVelocity(state) == 0);
             CHECK(muscle.getTendonVelocity(state) == 0);
-            CHECK(muscle.getForceVelocityMultiplier(state) == 1.0);
+            CHECK(muscle.getForceVelocityMultiplier(state) == Approx(1.0));
 
             model.realizeDynamics(state);
             const auto Fmax = muscle.getMaxIsometricForce();

@@ -641,17 +641,14 @@ private:
 
     // Parameters for the active fiber force-length curve.
     // ---------------------------------------------------
-    // Values are taken from https://simtk.org/projects/optcntrlmuscle
-    // rather than the paper supplement. b11 was modified to ensure that
-    // f(1) = 1.
-    constexpr static double b11 = 0.814483478343008;
-    constexpr static double b21 = 1.0543666879966989;
-    constexpr static double b31 = 0.162384573599574;
-    constexpr static double b41 = 0.063303448465465;
-    constexpr static double b12 = 0.433004984392647;
-    constexpr static double b22 = 0.7167756274251487;
-    constexpr static double b32 = -0.029947116970696;
-    constexpr static double b42 = 0.200356847296188;
+    constexpr static double b11 = 0.8174335195120225;
+    constexpr static double b21 = 1.054348561163096;
+    constexpr static double b31 = 0.16194288662761705;
+    constexpr static double b41 = 0.06381565266097716;
+    constexpr static double b12 = 0.43130780147182907;
+    constexpr static double b22 = 0.7163004817144202;
+    constexpr static double b32 = -0.029060905806803296;
+    constexpr static double b42 = 0.19835014521987723;
     constexpr static double b13 = 0.1;
     constexpr static double b23 = 1.0;
     constexpr static double b33 = 0.353553390593274; // 0.5 * sqrt(0.5)
@@ -681,12 +678,12 @@ private:
 
     // Parameters for the force-velocity curve.
     // ----------------------------------------
-    constexpr static double d1 = -12.401152409545595;
-    constexpr static double d2 = 9.351250953986145;
-    constexpr static double d3 = 7.950374172664825;
-    constexpr static double d4 = 2.7179212777836335;
-    constexpr static double d5 = -0.2770931848597726;
-    constexpr static double d6 = 8.038780873259377;
+    constexpr static double d1 = -32.51401019139919;
+    constexpr static double d2 = 22.160392466960214;
+    constexpr static double d3 = 18.7932134796918;
+    constexpr static double d4 = 6.320952269683997;
+    constexpr static double d5 = -0.27671677680513945;
+    constexpr static double d6 = 8.053304562566995;
 
     constexpr static double m_minNormFiberLength = 0.2;
     constexpr static double m_maxNormFiberLength = 1.8;
