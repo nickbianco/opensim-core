@@ -555,11 +555,6 @@ public:
     /// createVectorLinspace(200, -1.1, 1.1).
     DataTable exportFiberVelocityMultiplierToTable(
             const SimTK::Vector& normFiberVelocities = SimTK::Vector()) const;
-    /// Export the fiber tendon force multiplier curve to a DataTable. If
-    /// the normFiberVelocities argument is omitted, we use
-    /// createVectorLinspace(200, 0.95, 1 + <strain at 1 norm force>)
-    DataTable exportTendonForceMultiplierToTable(
-            const SimTK::Vector& normTendonLengths = SimTK::Vector()) const;
     /// Print the muscle curves to STO files. The files will be named as
     /// `<muscle-name>_<curve_type>.sto`.
     ///
