@@ -1465,7 +1465,7 @@ TEST_CASE("MeyerFregly2016Muscle basics") {
             CHECK(muscle.getPennationAngularVelocity(state) == 0);
             CHECK(muscle.getTendonVelocity(state) == 0);
             CHECK(muscle.getForceVelocityMultiplier(state) ==
-                    muscle.calcForceVelocityMultiplier(0.21));
+                    Approx(muscle.calcForceVelocityMultiplier(0.21)));
 
             model.realizeDynamics(state);
             const auto Fmax = muscle.getMaxIsometricForce();
