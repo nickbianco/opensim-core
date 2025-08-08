@@ -25,7 +25,7 @@
 
 #include <OpenSim/Common/ModelDisplayHints.h>
 
-namespace OpenSim {
+using namespace OpenSim;
 
 ContactHalfSpace::ContactHalfSpace() :
     ContactGeometry()
@@ -87,13 +87,10 @@ void ContactHalfSpace::generateDecorationsImpl(bool fixed,
                     // decorative geometry is within the contact geomtry, we
                     // must offset by half the thickness of the brick.
                     .setTransform(X_BP * SimTK::Transform(SimTK::Vec3(
-                                                 brickHalfThickness, 0, 0)))
+                                                brickHalfThickness, 0, 0)))
                     .setScale(1)
                     .setRepresentation(get_Appearance().get_representation())
                     .setBodyId(getFrame().getMobilizedBodyIndex())
                     .setColor(get_Appearance().get_color())
                     .setOpacity(get_Appearance().get_opacity()));
 }
-
-
-} // end of namespace OpenSim
