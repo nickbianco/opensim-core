@@ -45,6 +45,8 @@
 #include "Model/ContactHalfSpace.h"
 #include "Model/ContactMesh.h"
 #include "Model/CoordinateLimitForce.h"
+#include "Model/CoordinateLinearStop.h"
+#include "Model/CoordinateLinearDamper.h"
 #include "Model/CoordinateSet.h"
 #include "Model/ElasticFoundationForce.h"
 #include "Model/ExponentialContactForce.h"
@@ -72,6 +74,7 @@
 #include "Model/BushingForce.h"
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
+#include "Model/ForceAggregator.h"
 #include "Model/ExternalLoads.h"
 #include "Model/PathActuator.h"
 #include "Model/ProbeSet.h"
@@ -95,6 +98,7 @@
 #include "Control/PrescribedController.h"
 #include "Control/InputController.h"
 #include "Control/SynergyController.h"
+#include "Control/DiscreteController.h"
 
 #include "Wrap/PathWrap.h"
 #include "Wrap/PathWrapSet.h"
@@ -136,7 +140,6 @@
 #include "TableProcessor.h"
 #include "MarkersReference.h"
 #include "PositionMotion.h"
-#include "Control/InputController.h"
 
 #include <string>
 #include <iostream>
@@ -254,6 +257,8 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( ContactEllipsoid() );
     Object::registerType( ContactTorus() );
     Object::registerType( CoordinateLimitForce() );
+    Object::registerType( CoordinateLinearStop() );
+    Object::registerType( CoordinateLinearDamper() );
     Object::registerType( SmoothSphereHalfSpaceForce() );
     Object::registerType( ExponentialContactForce() );
     Object::registerType( ExponentialContactForce::Parameters() );
@@ -276,11 +281,13 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( FunctionBasedBushingForce() );
     Object::registerType( ExpressionBasedBushingForce() );
     Object::registerType( ExpressionBasedCoordinateForce() );
+    Object::registerType( ForceAggregator() );
 
     Object::registerType( ControlSetController() );
     Object::registerType( PrescribedController() );
     Object::registerType( SynergyVector() );
     Object::registerType( SynergyController() );
+    Object::registerType( DiscreteController() );
 
     Object::registerType( PathActuator() );
     Object::registerType( ProbeSet() );

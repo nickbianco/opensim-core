@@ -2,6 +2,8 @@
 option(BUILD_API_EXAMPLES
     "Build examples that are used for the APIExamples distribution" ON)
 
+# TODO: Wrapping example fails to build in a Docker container.
+
 if(BUILD_API_EXAMPLES)
 
   install(DIRECTORY ExampleMain
@@ -16,7 +18,7 @@ if(BUILD_API_EXAMPLES)
         SymbolicExpressionReporter
         DataTable
         DataAdapter
-        Wrapping
+        # Wrapping
         DESTINATION "${OPENSIM_INSTALL_CPPEXDIR}")
 
     add_subdirectory(ExampleHopperDevice)
@@ -24,7 +26,7 @@ if(BUILD_API_EXAMPLES)
     add_subdirectory(DataTable)
     add_subdirectory(DataAdapter)
     add_subdirectory(Moco)
-    add_subdirectory(Wrapping)
+    # add_subdirectory(Wrapping)
 
 elseif()
 
@@ -41,7 +43,7 @@ endif()
 
 # We do not install the BuildDynamicWalker example, because it is assigned to
 # students as homework. The solution to the BuildDynamicWalker example is in
-# OpenSim/Examples/BuildDynamicWalker, and is tested in 
+# OpenSim/Examples/BuildDynamicWalker, and is tested in
 # OpenSim/Tests/BuildDynamicWalker.
 
 install(DIRECTORY Plugins DESTINATION "${OPENSIM_INSTALL_CPPEXDIR}")
