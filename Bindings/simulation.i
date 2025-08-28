@@ -115,6 +115,9 @@ OpenSim::ModelComponentSet<OpenSim::Controller>;
 %include <OpenSim/Simulation/Model/ExternalLoads.h>
 %include <OpenSim/Simulation/Model/PrescribedForce.h>
 %include <OpenSim/Simulation/Model/CoordinateLimitForce.h>
+%include <OpenSim/Simulation/Model/CoordinateLinearStop.h>
+%include <OpenSim/Simulation/Model/CoordinateLinearDamper.h>
+%include <OpenSim/Simulation/Model/CoordinateLinearSpring.h>
 
 %include <OpenSim/Simulation/Model/ContactGeometry.h>
 %template(SetContactGeometry) OpenSim::Set<OpenSim::ContactGeometry, OpenSim::ModelComponent>;
@@ -125,6 +128,7 @@ OpenSim::ModelComponentSet<OpenSim::Controller>;
 %include <OpenSim/Simulation/Model/ElasticFoundationForce.h>
 %include <OpenSim/Simulation/Model/HuntCrossleyForce.h>
 %include <OpenSim/Simulation/Model/SmoothSphereHalfSpaceForce.h>
+%include <OpenSim/Simulation/Model/ExponentialContactForce.h>
 
 %include <OpenSim/Simulation/Model/Actuator.h>
 %template(SetActuators) OpenSim::Set<OpenSim::Actuator, OpenSim::Object>;
@@ -143,6 +147,7 @@ OpenSim::ModelComponentSet<OpenSim::Controller>;
 %include <OpenSim/Simulation/Control/PrescribedController.h>
 %include <OpenSim/Simulation/Control/InputController.h>
 %include <OpenSim/Simulation/Control/SynergyController.h>
+%include <OpenSim/Simulation/Control/DiscreteController.h>
 
 %include <OpenSim/Simulation/Manager/Manager.h>
 %include <OpenSim/Simulation/Model/AbstractTool.h>
@@ -204,6 +209,7 @@ OpenSim::ModelComponentSet<OpenSim::Controller>;
 %include <OpenSim/Simulation/Model/PointToPointSpring.h>
 %include <OpenSim/Simulation/Model/ExpressionBasedPointToPointForce.h>
 %include <OpenSim/Simulation/Model/ExpressionBasedCoordinateForce.h>
+%include <OpenSim/Simulation/Model/ForceAggregator.h>
 
 %include <OpenSim/Simulation/Model/PathSpring.h>
 %include <OpenSim/Simulation/Model/ExpressionBasedPathForce.h>

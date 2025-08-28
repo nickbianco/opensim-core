@@ -20,8 +20,12 @@
 
 #include <OpenSim/Simulation/Model/Force.h>
 #include <OpenSim/Simulation/Model/ForceProducer.h>
+#include <OpenSim/Simulation/Model/ForceAggregator.h>
 #include <OpenSim/Simulation/Model/PrescribedForce.h>
 #include <OpenSim/Simulation/Model/CoordinateLimitForce.h>
+#include <OpenSim/Simulation/Model/CoordinateLinearDamper.h>
+#include <OpenSim/Simulation/Model/CoordinateLinearStop.h>
+#include <OpenSim/Simulation/Model/CoordinateLinearSpring.h>
 #include <OpenSim/Simulation/Model/ExternalForce.h>
 #include <OpenSim/Simulation/Model/ContactGeometry.h>
 #include <OpenSim/Simulation/Model/ContactHalfSpace.h>
@@ -30,6 +34,7 @@
 #include <OpenSim/Simulation/Model/ElasticFoundationForce.h>
 #include <OpenSim/Simulation/Model/HuntCrossleyForce.h>
 #include <OpenSim/Simulation/Model/SmoothSphereHalfSpaceForce.h>
+#include <OpenSim/Simulation/Model/ExponentialContactForce.h>
 
 #include <OpenSim/Simulation/Model/ContactGeometrySet.h>
 #include <OpenSim/Simulation/Model/Probe.h>
@@ -52,7 +57,9 @@
 #include <OpenSim/Simulation/Control/ControlLinear.h>
 #include <OpenSim/Simulation/Control/Controller.h>
 #include <OpenSim/Simulation/Control/PrescribedController.h>
+#include <OpenSim/Simulation/Control/InputController.h>
 #include <OpenSim/Simulation/Control/SynergyController.h>
+#include <OpenSim/Simulation/Control/DiscreteController.h>
 #include <OpenSim/Simulation/Manager/Manager.h>
 #include <OpenSim/Simulation/Model/Analysis.h>
 #include <OpenSim/Simulation/Model/AnalysisSet.h>

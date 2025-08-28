@@ -70,6 +70,10 @@ public:
         }
     }
 
+    SimTK::Real getActivation(const SimTK::State& s) const {
+        return getStateVariableValue(s, "activation");
+    }
+
     /// The lower bound on activation is getMinControl() and the upper bound is
     /// getMaxControl().
     /// Whether these bounds are enforced is determined by the solver used.
@@ -103,7 +107,7 @@ protected:
     }
 
     double computeActuation(const SimTK::State& s) const override {
-        return getStateVariableValue(s, "activation") * getOptimalForce();
+        return getActivation(s) * getOptimalForce();
     }
 private:
     void constructProperties() {

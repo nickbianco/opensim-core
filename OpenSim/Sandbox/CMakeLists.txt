@@ -1,6 +1,7 @@
 add_subdirectory(TaskSpace)
 add_subdirectory(UsefulComponents)
 add_subdirectory(Moco)
+add_subdirectory(Gait3D)
 
 file(GLOB TO_COMPILE "future*.cpp")
 
