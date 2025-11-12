@@ -27,8 +27,40 @@
 
 using namespace OpenSim;
 
-void BeamJoint::extendAddToSystem(SimTK::MultibodySystem& system) const
-{
+BeamJoint::BeamJoint() : Super() {
+    constructProperties();
+}
+
+BeamJoint::BeamJoint(const std::string&    name,
+                     const PhysicalFrame&  parent,
+                     const PhysicalFrame&  child,
+                     const SimTK::Real&    beamLength) :
+                     Super(name, parent, child) {
+    constructProperties();
+    set_beam_length(beamLength);
+}
+
+BeamJoint::BeamJoint(const std::string&    name,
+                     const PhysicalFrame&  parent,
+                     const SimTK::Vec3&    locationInParent,
+                     const SimTK::Vec3&    orientationInParent,
+                     const PhysicalFrame&  child,
+                     const SimTK::Vec3&    locationInChild,
+                     const SimTK::Vec3&    orientationInChild,
+                     const SimTK::Real&    beamLength) :
+    Super(name, parent, locationInParent, orientationInParent,
+          child, locationInChild, orientationInChild) {
+    constructProperties();
+    set_beam_length(beamLength);
+}
+
+void BeamJoint::constructProperties() {
+    constructProperty_beam_length(1.0);
+}
+
+void BeamJoint::extendAddToSystem(SimTK::MultibodySystem& system) const {
     Super::extendAddToSystem(system);
-    createMobilizedBody<SimTK::MobilizedBody::Beam>(system);
+    SimTK::MobilizedBody::Beam mobod =
+        createMobilizedBody<SimTK::MobilizedBody::Beam>(system);
+    mobod.setDefaultLength(get_beam_length());
 }

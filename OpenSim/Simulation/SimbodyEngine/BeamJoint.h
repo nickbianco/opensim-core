@@ -49,6 +49,31 @@ private:
                                    static_cast<unsigned>(Coord::Rotation3Z)) };
 
 public:
+//==============================================================================
+// PROPERTIES
+//==============================================================================
+    OpenSim_DECLARE_PROPERTY(beam_length, SimTK::Real,
+        "The length of the beam.");
+
+//=============================================================================
+// METHODS
+//=============================================================================
+    BeamJoint();
+
+    BeamJoint(const std::string&    name,
+                const PhysicalFrame&  parent,
+                const PhysicalFrame&  child,
+                const SimTK::Real&    beamLength);
+
+    BeamJoint(const std::string&    name,
+              const PhysicalFrame&  parent,
+              const SimTK::Vec3&    locationInParent,
+              const SimTK::Vec3&    orientationInParent,
+              const PhysicalFrame&  child,
+              const SimTK::Vec3&    locationInChild,
+              const SimTK::Vec3&    orientationInChild,
+              const SimTK::Real&    beamLength);
+
     /** Use Joint's constructors. @see Joint */
     using Joint::Joint;
 
@@ -75,6 +100,9 @@ public:
 protected:
     // MODEL COMPONENT INTERFACE
     void extendAddToSystem(SimTK::MultibodySystem& system) const override;
+
+private:
+    void constructProperties();
 };
 
 } // namespace OpenSim
