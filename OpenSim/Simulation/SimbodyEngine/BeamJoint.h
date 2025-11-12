@@ -101,6 +101,11 @@ protected:
     // MODEL COMPONENT INTERFACE
     void extendAddToSystem(SimTK::MultibodySystem& system) const override;
 
+    void generateDecorations(bool fixed, const ModelDisplayHints& hints,
+        const SimTK::State& state,
+        SimTK::Array_<SimTK::DecorativeGeometry>& geometry)
+        const override;
+
 private:
     void constructProperties();
 };
