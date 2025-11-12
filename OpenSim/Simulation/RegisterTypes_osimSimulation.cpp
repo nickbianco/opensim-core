@@ -72,6 +72,7 @@
 #include "Model/BushingForce.h"
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
+#include "Model/ExponentialCoordinateForce.h"
 #include "Model/ExternalLoads.h"
 #include "Model/PathActuator.h"
 #include "Model/ProbeSet.h"
@@ -125,6 +126,7 @@
 #include "SimbodyEngine/CustomJoint.h"
 #include "SimbodyEngine/WeldJoint.h"
 #include "SimbodyEngine/ScapulothoracicJoint.h"
+#include "SimbodyEngine/BeamJoint.h"
 #include "OpenSim/Simulation/SimbodyEngine/ConstantCurvatureJoint.h"
 #include "SimbodyEngine/TransformAxis.h"
 #include "SimbodyEngine/Coordinate.h"
@@ -235,6 +237,7 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( SliderJoint() );
     Object::registerType( PlanarJoint() );
     Object::registerType( ConstantCurvatureJoint() );
+    Object::registerType( BeamJoint() );
     Object::registerType( TransformAxis() );
     Object::registerType( Coordinate() );
     Object::registerType( SpatialTransform() );
@@ -254,6 +257,7 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( ContactEllipsoid() );
     Object::registerType( ContactTorus() );
     Object::registerType( CoordinateLimitForce() );
+    Object::registerType( ExponentialCoordinateForce() );
     Object::registerType( SmoothSphereHalfSpaceForce() );
     Object::registerType( ExponentialContactForce() );
     Object::registerType( ExponentialContactForce::Parameters() );

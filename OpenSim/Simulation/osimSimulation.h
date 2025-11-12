@@ -69,6 +69,7 @@
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
 #include "Model/CoordinateLimitForce.h"
+#include "Model/ExponentialCoordinateForce.h"
 #include "Model/ExternalLoads.h"
 #include "Model/PathActuator.h"
 #include "Model/ActuatorPowerProbe.h"
@@ -118,6 +119,7 @@
 #include "SimbodyEngine/Coordinate.h"
 #include "SimbodyEngine/SpatialTransform.h"
 #include "SimbodyEngine/ConstantCurvatureJoint.h"
+#include "SimbodyEngine/BeamJoint.h"
 
 #include "AssemblySolver.h"
 #include "CoordinateReference.h"

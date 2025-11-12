@@ -100,6 +100,7 @@
 #include <OpenSim/Simulation/SimbodyEngine/PlanarJoint.h>
 #include <OpenSim/Simulation/SimbodyEngine/ScapulothoracicJoint.h>
 #include <OpenSim/Simulation/SimbodyEngine/ConstantCurvatureJoint.h>
+#include <OpenSim/Simulation/SimbodyEngine/BeamJoint.h>
 #include <OpenSim/Simulation/Model/JointSet.h>
 
 #include <OpenSim/Simulation/Model/Marker.h>
@@ -130,6 +131,7 @@
 #include <OpenSim/Simulation/Model/ActivationFiberLengthMuscle.h>
 #include <OpenSim/Simulation/Model/ExpressionBasedPointToPointForce.h>
 #include <OpenSim/Simulation/Model/ExpressionBasedCoordinateForce.h>
+#include <OpenSim/Simulation/Model/ExponentialCoordinateForce.h>
 #include <OpenSim/Simulation/Model/PointToPointSpring.h>
 #include <OpenSim/Simulation/Model/PathSpring.h>
 #include <OpenSim/Simulation/Model/ExpressionBasedPathForce.h>
