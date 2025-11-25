@@ -67,6 +67,12 @@ SimTK::MobilizedBody& PhysicalFrame::updMobilizedBody()
     return updModel().updMatterSubsystem().updMobilizedBody(_mbIndex);
 }
 
+const SimTK::Transform& PhysicalFrame::getMobilizerTransform(
+        const SimTK::State& state) const
+{
+    return getMobilizedBody().getBodyTransform(state);
+}
+
 void PhysicalFrame::setMobilizedBodyIndex(const SimTK::MobilizedBodyIndex& mbix) const
 {
     OPENSIM_THROW_IF_FRMOBJ(!mbix.isValid(), Exception,
