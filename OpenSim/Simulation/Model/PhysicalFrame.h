@@ -138,11 +138,6 @@ public:
     const SimTK::Transform& getMobilizerTransform(
             const SimTK::State& state) const;
 
-    /**
-    Get the transform of the mobilizer that backs this PhysicalFrame.
-    */
-    const SimTK::Transform& updMobilizerTransform(const SimTK::State& state);
-
     // End of underlying MobilizedBody accessors.
     ///@}
 

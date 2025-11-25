@@ -70,7 +70,7 @@ SimTK::MobilizedBody& PhysicalFrame::updMobilizedBody()
 const SimTK::Transform& PhysicalFrame::getMobilizerTransform(
         const SimTK::State& state) const
 {
-    return getMobilizedBody().getBodyTransform(state);
+    return getMobilizedBody().getMobilizerTransform(state);
 }
 
 void PhysicalFrame::setMobilizedBodyIndex(const SimTK::MobilizedBodyIndex& mbix) const
