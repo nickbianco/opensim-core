@@ -57,6 +57,8 @@ performance and stability in wrapping solutions.
 - Added `ExponentialCoordinateLimitForce`, a force element for enforcing coordinate limits using exponential spring functions. (#4231)
 - Added `CantileverFreeBeamJoint`, a joint type providing a lightweight way for modeling flexible structures (e.g., the bending of the spinal column in a human or animal skeleton). (#4227)
 - Added `ExponentialCoordinateLimitForce`, a force element for enforcing coordinate limits using exponential spring functions. (#4231)
+- Fixed an issue where `StdVectorDouble::get()` would return `java.lang.Double` in Matlab instead of `double`. (#4275)
+- Added `CantileverFreeBeamJoint`, a joint type providing a lightweight way for modeling flexible structures (e.g., the bending of the spinal column in a human or animal skeleton). (#4227)
 
 
 v4.5.2
