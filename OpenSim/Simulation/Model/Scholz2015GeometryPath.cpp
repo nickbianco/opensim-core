@@ -325,7 +325,14 @@ void Scholz2015GeometryPath::extendAddToSystem(
     cable.setSmoothnessTolerance(1e-5);
     cable.setCurveSegmentAccuracy(1e-10);
     cable.setSolverMaxIterations(50);
-    cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
+    if (getAlgorithm() == "scholz2015") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
+    } else if (getAlgorithm() == "minimum_length") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::MinimumLength);
+    } else {
+        OPENSIM_THROW_FRMOBJ(Exception,
+            "Invalid algorithm: {}.", getAlgorithm());
+    }
     _index = cable.getIndex();
 }
 
@@ -370,6 +377,7 @@ void Scholz2015GeometryPath::generateDecorations(
 //=============================================================================
 void Scholz2015GeometryPath::constructProperties() {
     constructProperty_path_elements();
+    constructProperty_algorithm("scholz2015");
 }
 
 const Scholz2015GeometryPathObstacle* Scholz2015GeometryPath::getObstacle(
