@@ -189,6 +189,14 @@ int Scholz2015GeometryPath::getNumPathElements() const {
     return getProperty_path_elements().size();
 }
 
+const std::string& Scholz2015GeometryPath::getAlgorithm() const {
+    return get_algorithm();
+}
+
+void Scholz2015GeometryPath::setAlgorithm(const std::string& algorithm) {
+    set_algorithm(algorithm);
+}
+
 //=============================================================================
 // ABSTRACT PATH INTERFACE
 //=============================================================================
