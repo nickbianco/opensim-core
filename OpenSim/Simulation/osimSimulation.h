@@ -70,6 +70,7 @@
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
 #include "Model/CoordinateLimitForce.h"
+#include "Model/CoordinateLinearStopForce.h"
 #include "Model/ExternalLoads.h"
 #include "Model/PathActuator.h"
 #include "Model/ActuatorPowerProbe.h"
