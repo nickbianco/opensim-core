@@ -425,6 +425,16 @@ public:
      */
     int getNumPathElements() const;
 
+    /**
+     * Get the algorithm used for computing the path.
+     */
+    const std::string& getAlgorithm() const;
+
+    /**
+     * Set the algorithm used for computing the path.
+     */
+    void setAlgorithm(const std::string& algorithm);
+
     // @}
 
     //** @name `AbstractGeometryPath` interface */
@@ -446,6 +456,9 @@ private:
     // PROPERTIES
     OpenSim_DECLARE_LIST_PROPERTY(path_elements, Scholz2015GeometryPathElement,
         "The list of elements (path points or obstacles) defining the path.");
+    OpenSim_DECLARE_PROPERTY(algorithm, std::string,
+        "The algorithm to use for computing the path: 'scholz2015' (default) "
+        " or 'minimum_length.");
 
     // MODEL COMPONENT INTERFACE
     void extendConnectToModel(Model& model) override;
