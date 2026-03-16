@@ -117,7 +117,11 @@ OpenSim::ModelComponentSet<OpenSim::Controller>;
 %include <OpenSim/Simulation/Model/ExternalLoads.h>
 %include <OpenSim/Simulation/Model/PrescribedForce.h>
 %include <OpenSim/Simulation/Model/CoordinateLimitForce.h>
+<<<<<<< HEAD
 %include <OpenSim/Simulation/Model/ExponentialCoordinateLimitForce.h>
+=======
+%include <OpenSim/Simulation/Model/CoordinateLinearStopForce.h>
+>>>>>>> 71502a17c (Add CoordinateLinearStopForce to osimSimulation and bindings)
 
 %include <OpenSim/Simulation/Model/ContactGeometry.h>
 %template(SetContactGeometry) OpenSim::Set<OpenSim::ContactGeometry, OpenSim::ModelComponent>;
