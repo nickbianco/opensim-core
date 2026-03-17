@@ -874,6 +874,20 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
         }
     }
 
+    // Remove any path length or moment arm rows that contain NaN values.
+    std::vector<double> times = coordinateValues.getIndependentColumn();
+    for (const auto& time : times) {
+        bool momentArmNaN = SimTK::isNaN(momentArms.getRow(time).sum());
+        bool pathLengthNaN = SimTK::isNaN(pathLengths.getRow(time).sum());
+        if (momentArmNaN || pathLengthNaN) {
+            pathLengths.removeRow(time);
+            momentArms.removeRow(time);
+            coordinateValues.removeRow(time);
+            log_info("NaN path length or moment arm detected at time {:1.2f} s, "
+                     "removing row...", time);
+        }
+    }
+
     // Remove moment arm columns that contain values below the specified
     // moment arm tolerance.
     for (const auto& label : momentArms.getColumnLabels()) {
@@ -889,20 +903,6 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
             } else {
                 momentArmMap[path].push_back(coordinate);
             }
-        }
-    }
-
-    // Remove any path length or moment arm rows that contain NaN values.
-    std::vector<double> times = coordinateValues.getIndependentColumn();
-    for (const auto& time : times) {
-        bool momentArmNaN = SimTK::isNaN(momentArms.getRow(time).sum());
-        bool pathLengthNaN = SimTK::isNaN(pathLengths.getRow(time).sum());
-        if (momentArmNaN || pathLengthNaN) {
-            pathLengths.removeRow(time);
-            momentArms.removeRow(time);
-            coordinateValues.removeRow(time);
-            log_info("NaN path length or moment arm detected at time {:1.2f} s, "
-                     "removing row...", time);
         }
     }
 
