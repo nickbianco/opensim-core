@@ -550,7 +550,7 @@ private:
             // Realize the state at the velocity stage and project the speeds to
             // satisfy the velocity constraints.
             _model->getMultibodySystem().realize(_state, SimTK::Stage::Velocity);
-            _model->getMultibodySystem().projectU(_state, 1e-10);
+            // _model->getMultibodySystem().projectU(_state, 1e-10);
 
             // Compute the moment arm.
             return -path.getLengtheningSpeed(_state);
