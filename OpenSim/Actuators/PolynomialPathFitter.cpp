@@ -901,6 +901,7 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
             if (removeColumn) {
                 momentArms.removeColumn(label);
             } else {
+                log_info("Keeping '{}' moment arm for path '{}' with column norm {:1.3f}...", label, path, col.normInf());
                 momentArmMap[path].push_back(coordinate);
             }
         }
