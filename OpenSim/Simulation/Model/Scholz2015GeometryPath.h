@@ -27,6 +27,7 @@
 #include <OpenSim/Simulation/Model/AbstractGeometryPath.h>
 
 #include <OpenSim/Simulation/Model/ContactGeometry.h>
+#include <OpenSim/Simulation/Model/Model.h>
 #include <OpenSim/Simulation/Model/PathPoint.h>
 #include <OpenSim/Simulation/MomentArmSolver.h>
 
@@ -526,7 +527,40 @@ private:
             SimTK::CableSpanViaPointIndex, int>>;
     mutable SimTK::ResetOnCopy<ViaPointIndexes> _viaPointIndexes;
 
-    SimTK::ResetOnCopy<std::unique_ptr<MomentArmSolver> > _maSolver;
+    // MOMENT ARM SOLVER
+    class Scholz2015MomentArmSolver : public Object {
+    OpenSim_DECLARE_CONCRETE_OBJECT(Scholz2015MomentArmSolver, Object);
+    public:
+        explicit Scholz2015MomentArmSolver(const Model& model) {
+            _model = &model;
+            _state = model.getWorkingState();
+        }
+
+        double solve(const SimTK::State& state, const Coordinate& coordinate,
+                const Scholz2015GeometryPath& path) const {
+            // Copy the original state's joint configuration (q) to the solver
+            // state.
+            _state.updQ() = state.getQ();
+
+            // Set all joint speeds (u) to zero, except for the speed of the
+            // coordinate of interest.
+            _state.updU() = 0;
+            coordinate.setSpeedValue(_state, 1.0);
+
+            // Realize the state at the velocity stage and project the speeds to
+            // satisfy the velocity constraints.
+            _model->getMultibodySystem().realize(_state, SimTK::Stage::Velocity);
+            _model->getMultibodySystem().projectU(_state, 1e-10);
+
+            // Compute the moment arm.
+            return -path.getLengtheningSpeed(_state);
+        }
+
+    private:
+        SimTK::ReferencePtr<const Model> _model;
+        mutable SimTK::State _state;
+    };
+    SimTK::ResetOnCopy<std::unique_ptr<Scholz2015MomentArmSolver> > _maSolver;
 };
 
 
