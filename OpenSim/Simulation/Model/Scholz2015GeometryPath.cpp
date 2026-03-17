@@ -26,7 +26,6 @@
 
 #include <OpenSim/Simulation/Model/ForceConsumer.h>
 #include <OpenSim/Simulation/SimbodyEngine/Coordinate.h>
-#include <OpenSim/Simulation/Model/Model.h>
 
 #include <optional>
 
@@ -214,10 +213,10 @@ double Scholz2015GeometryPath::computeMomentArm(const SimTK::State& s,
 
     if (!_maSolver) {
         const_cast<Self*>(this)->_maSolver.reset(
-            new MomentArmSolver(getModel()));
+            new Scholz2015MomentArmSolver(getModel()));
     }
 
-    return _maSolver->solve(s, coord,  *this);
+    return _maSolver->solve(s, coord, *this);
 }
 
 void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
