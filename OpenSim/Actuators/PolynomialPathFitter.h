@@ -650,6 +650,7 @@ private:
      * are removed if they do not correspond to entries in the `momentArmMap`.
      */
     void filterSampledData(const Model& model,
+            const TimeSeriesTable& originalMomentArms,
             TimeSeriesTable& coordinateValues, TimeSeriesTable& pathLengths,
             TimeSeriesTable& momentArms, MomentArmMap& momentArmMap);
 
