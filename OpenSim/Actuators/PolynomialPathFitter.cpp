@@ -889,6 +889,7 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Remove moment arm columns that contain values below the specified
     // moment arm tolerance.
     for (const auto& label : momentArms.getColumnLabels()) {
@@ -911,6 +912,9 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
 =======
 >>>>>>> 9308aae38 (Remove moment arm columns after all filtering steps)
     // Remove sample points that fall outside two standard deviations of the
+=======
+    // Remove sample points that fall outside five standard deviations of the
+>>>>>>> 85bd8d7a5 (Try rejecting non-zero moment arm points when nominal is zero)
     // data in each column.
     double threshold = 5.0;
     std::vector<double> rejectedTimePoints;
@@ -942,7 +946,11 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
             int currentNominalIndex = 0;
             for (int i = 0; i < column.size(); ++i) {
                 double nominal = column[currentNominalIndex];
-                if (std::abs(column[i] - nominal) > threshold * avgStd) {
+                bool rejectFromDeviation =
+                        std::abs(column[i] - nominal) > threshold * avgStd;
+                bool rejectFromNominal = (nominal < SimTK::SignificantReal) &&
+                        (column[i] > SimTK::SignificantReal);
+                if (rejectFromDeviation || rejectFromNominal) {
                     rejectedTimePoints.push_back(times[i]);
                 }
                 if (i % increment == 0) {
