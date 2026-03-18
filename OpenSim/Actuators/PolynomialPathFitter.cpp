@@ -949,7 +949,6 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
                 bool rejectFromDeviation =
                         std::abs(column[i] - nominal) > threshold * avgStd;
                 bool rejectFromNominal =
-                    (avgStd < SimTK::SignificantReal) &&
                     (std::abs(nominal) < SimTK::SignificantReal) &&
                     (std::abs(column[i]) > SimTK::SignificantReal);
                 if (rejectFromDeviation || rejectFromNominal) {
