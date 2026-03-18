@@ -295,7 +295,7 @@ void PolynomialPathFitter::run() {
     log_info("Step 6/9: Filter the sampled path data.");
     log_info("---------------------------------------");
     MomentArmMap momentArmMap;
-    filterSampledData(model, valuesSampled, pathLengthsSampled,
+    filterSampledData(model, momentArms, valuesSampled, pathLengthsSampled,
             momentArmsSampled, momentArmMap);
 
     // Fit the FunctionBasedPaths.
@@ -857,6 +857,7 @@ void PolynomialPathFitter::computePathLengthsAndMomentArms(
 }
 
 void PolynomialPathFitter::filterSampledData(const Model& model,
+        const TimeSeriesTable& originalMomentArms,
         TimeSeriesTable& coordinateValues,
         TimeSeriesTable& pathLengths,
         TimeSeriesTable& momentArms,
@@ -946,12 +947,7 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
             int currentNominalIndex = 0;
             for (int i = 0; i < column.size(); ++i) {
                 double nominal = column[currentNominalIndex];
-                bool rejectFromDeviation =
-                        std::abs(column[i] - nominal) > threshold * avgStd;
-                bool rejectFromNominal =
-                    (std::abs(nominal) < SimTK::SignificantReal) &&
-                    (std::abs(column[i]) > SimTK::SignificantReal);
-                if (rejectFromDeviation || rejectFromNominal) {
+                if (std::abs(column[i] - nominal) > threshold * avgStd) {
                     rejectedTimePoints.push_back(times[i]);
                 }
                 if (i % increment == 0) {
@@ -987,7 +983,9 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
     for (const auto& label : momentArms.getColumnLabels()) {
         if (label.find("_moment_arm_") != std::string::npos) {
             const auto& col = momentArms.getDependentColumn(label);
-            bool removeColumn = col.normInf() < get_moment_arm_threshold();
+            const auto& origCol = originalMomentArms.getDependentColumn(label);
+            bool removeColumn = (col.normInf() < get_moment_arm_threshold()) ||
+                    (origCol.normInf() < get_moment_arm_threshold());
             std::string path = label.substr(0, label.find("_moment_arm_"));
             std::string coordinate = label.substr(
                     label.find("_moment_arm_") + 12);
