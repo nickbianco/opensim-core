@@ -889,33 +889,7 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
         }
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    // Remove moment arm columns that contain values below the specified
-    // moment arm tolerance.
-    for (const auto& label : momentArms.getColumnLabels()) {
-        if (label.find("_moment_arm_") != std::string::npos) {
-            const auto& col = momentArms.getDependentColumn(label);
-            bool removeColumn = col.normInf() < get_moment_arm_threshold();
-            std::string path = label.substr(0, label.find("_moment_arm_"));
-            std::string coordinate = label.substr(
-                    label.find("_moment_arm_") + 12);
-
-            if (removeColumn) {
-                momentArms.removeColumn(label);
-            } else {
-                log_info("Keeping '{}' moment arm for path '{}' with column norm {:1.3f}...", label, path, col.normInf());
-                momentArmMap[path].push_back(coordinate);
-            }
-        }
-    }
-
-=======
->>>>>>> 9308aae38 (Remove moment arm columns after all filtering steps)
     // Remove sample points that fall outside two standard deviations of the
-=======
-    // Remove sample points that fall outside five standard deviations of the
->>>>>>> 85bd8d7a5 (Try rejecting non-zero moment arm points when nominal is zero)
     // data in each column.
     double threshold = 5.0;
     std::vector<double> rejectedTimePoints;

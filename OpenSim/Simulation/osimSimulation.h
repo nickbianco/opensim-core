@@ -70,11 +70,8 @@
 #include "Model/FunctionBasedBushingForce.h"
 #include "Model/ExpressionBasedBushingForce.h"
 #include "Model/CoordinateLimitForce.h"
-<<<<<<< HEAD
 #include "Model/ExponentialCoordinateLimitForce.h"
-=======
 #include "Model/CoordinateLinearStopForce.h"
->>>>>>> 71502a17c (Add CoordinateLinearStopForce to osimSimulation and bindings)
 #include "Model/ExternalLoads.h"
 #include "Model/PathActuator.h"
 #include "Model/ActuatorPowerProbe.h"
