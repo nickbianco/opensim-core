@@ -458,8 +458,8 @@ private:
     OpenSim_DECLARE_LIST_PROPERTY(path_elements, Scholz2015GeometryPathElement,
         "The list of elements (path points or obstacles) defining the path.");
     OpenSim_DECLARE_PROPERTY(algorithm, std::string,
-        "The algorithm to use for computing the path: 'scholz2015' (default) "
-        " or 'minimum_length.");
+        "The algorithm to use for computing the path. Valid options are : "
+        "'scholz2015' and 'minimum_length' (default: 'scholz2015').");
 
     // MODEL COMPONENT INTERFACE
     void extendConnectToModel(Model& model) override;
