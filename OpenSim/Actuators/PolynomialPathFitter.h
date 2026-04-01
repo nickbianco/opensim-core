@@ -708,9 +708,10 @@ private:
             SimTK::Vector& coefficients) const;
 
     /**
-     * Get the RMS errors between two sets of path lengths and moment arms
-     * computed from a model with FunctionBasedPaths and the original model. The
-     * `modelFitted` argument must be the model with the FunctionBasedPaths.
+     * Get the RMS and maximum errors between two sets of path lengths and
+     * moment arms computed from a model with FunctionBasedPaths and the
+     * original model. The `modelFitted` argument must be the model with the
+     * FunctionBasedPaths.
      */
     static void computeFittingErrors(const Model& modelFitted,
             const TimeSeriesTable& pathLengths,

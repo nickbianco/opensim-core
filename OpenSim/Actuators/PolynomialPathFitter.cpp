@@ -1559,11 +1559,12 @@ void PolynomialPathFitter::computeFittingErrors(const Model& modelFitted,
 
     // Helper function for printing warning messages.
     auto printWarningMessage = [](const std::string& pathLengthOrMomentArm,
+                                const std::string& errorType,
                                 double tolerance) {
         log_warn("-----------------------------------------------------------");
-        log_warn(fmt::format("The {} RMS error is greater than the prescribed "
+        log_warn(fmt::format("The {} {} error is greater than the prescribed "
                              "tolerance of {:g} cm.",
-                             pathLengthOrMomentArm, tolerance));
+                             pathLengthOrMomentArm, errorType, tolerance));
         log_warn("");
         log_warn("Consider increasing the number of samples per frame or the ");
         log_warn("polynomial order and re-fitting the model. If a re-fitting ");
@@ -1590,12 +1591,14 @@ void PolynomialPathFitter::computeFittingErrors(const Model& modelFitted,
             "Expected the model to contain 'FunctionBasedPath's, but none were "
             "found.");
 
-    // Print the path length and moment arm RMS errors for each path.
+    // Print the path length and moment arm RMS and maximum errors for each path.
     log_info("");
-    log_info("Summary of path length and moment arm RMS errors");
-    log_info("------------------------------------------------");
+    log_info("Summary of path length and moment arm RMS and maximum errors");
+    log_info("------------------------------------------------------------");
     SimTK::Vector pathLengthRMSErrors((int)pathLengths.getNumColumns());
+    SimTK::Vector pathLengthMaxErrors((int)pathLengths.getNumColumns());
     SimTK::Vector momentArmRMSErrors((int)momentArms.getNumColumns());
+    SimTK::Vector momentArmMaxErrors((int)momentArms.getNumColumns());
     int ip = 0;
     int ima = 0;
     for (const auto& path : modelFitted.getComponentList<FunctionBasedPath>()) {
@@ -1610,11 +1613,18 @@ void PolynomialPathFitter::computeFittingErrors(const Model& modelFitted,
         SimTK::Vector pathLengthError = pathLength - pathLengthFitted;
         double pathLengthRMSError = 100.0 * std::sqrt(
                 pathLengthError.normSqr() / pathLengthError.size());
-        pathLengthRMSErrors[ip++] = pathLengthRMSError;
-        log_info(" - path length RMSE: {:1.3f} cm", pathLengthRMSError);
+        double pathLengthMaxError = 100.0 * pathLengthError.normInf();
+        pathLengthRMSErrors[ip] = pathLengthRMSError;
+        pathLengthMaxErrors[ip] = pathLengthMaxError;
+        ++ip;
+        log_info(" - path length RMSE:      {:1.3f} cm", pathLengthRMSError);
+        log_info(" - path length max error: {:1.3f} cm", pathLengthMaxError);
 
         if (pathLengthRMSError > 10.0*pathLengthTolerance) {
-            printWarningMessage("path length", pathLengthTolerance);
+            printWarningMessage("path length", "RMS", pathLengthTolerance);
+        }
+        if (pathLengthMaxError > 10.0*pathLengthTolerance) {
+            printWarningMessage("path length", "maximum", pathLengthTolerance);
         }
 
         for (const auto& coordinatePath : path.getCoordinatePaths()) {
@@ -1631,33 +1641,60 @@ void PolynomialPathFitter::computeFittingErrors(const Model& modelFitted,
             SimTK::Vector momentArmError = momentArm - momentArmFitted;
             double momentArmRMSError = 100.0 * std::sqrt(
                     momentArmError.normSqr() / momentArmError.size());
-            momentArmRMSErrors[ima++] = momentArmRMSError;
-            log_info(" - '{}' moment arm RMSE: {:1.3f} cm", coordinateName,
+            double momentArmMaxError = 100.0 * momentArmError.normInf();
+            momentArmRMSErrors[ima] = momentArmRMSError;
+            momentArmMaxErrors[ima] = momentArmMaxError;
+            ++ima;
+            log_info(" - '{}' moment arm RMSE:      {:1.3f} cm", coordinateName,
                     momentArmRMSError);
+            log_info(" - '{}' moment arm max error: {:1.3f} cm", coordinateName,
+                    momentArmMaxError);
 
             if (momentArmRMSError > 10.0*momentArmTolerance) {
                 printWarningMessage(
                         fmt::format("'{}' moment arm", coordinateName),
-                        momentArmTolerance);
+                        "RMS", momentArmTolerance);
             }
-
+            if (momentArmMaxError > 10.0*momentArmTolerance) {
+                printWarningMessage(
+                        fmt::format("'{}' moment arm", coordinateName),
+                        "maximum", momentArmTolerance);
+            }
         }
         log_info("");
     }
 
-    // Print the average path length and moment arm RMS errors.
-    double averagePathLengthError = pathLengthRMSErrors.sum() /
-                                    pathLengthRMSErrors.size();
-    double averageMomentArmError = momentArmRMSErrors.sum() /
-                                   momentArmRMSErrors.size();
-    log_info("Average path length RMSE = {:1.3f} cm", averagePathLengthError);
-    if (averagePathLengthError > pathLengthTolerance) {
-        printWarningMessage("average path length", pathLengthTolerance);
+    // Print the average path length and moment arm RMS and maximum errors.
+    double averagePathLengthRMSError = pathLengthRMSErrors.sum() /
+                                       pathLengthRMSErrors.size();
+    double averagePathLengthMaxError = pathLengthMaxErrors.sum() /
+                                       pathLengthMaxErrors.size();
+    double averageMomentArmRMSError = momentArmRMSErrors.sum() /
+                                      momentArmRMSErrors.size();
+    double averageMomentArmMaxError = momentArmMaxErrors.sum() /
+                                      momentArmMaxErrors.size();
+    log_info("Average path length RMSE      = {:1.3f} cm",
+            averagePathLengthRMSError);
+    log_info("Average path length max error = {:1.3f} cm",
+            averagePathLengthMaxError);
+    if (averagePathLengthRMSError > pathLengthTolerance) {
+        printWarningMessage("average path length", "RMS", pathLengthTolerance);
+    }
+    if (averagePathLengthMaxError > pathLengthTolerance) {
+        printWarningMessage("average path length", "maximum",
+                pathLengthTolerance);
     }
 
-    log_info("Average moment arm RMSE  = {:1.3f} cm", averageMomentArmError);
-    if (averageMomentArmError > momentArmTolerance) {
-        printWarningMessage("average moment arm", momentArmTolerance);
+    log_info("Average moment arm RMSE       = {:1.3f} cm",
+            averageMomentArmRMSError);
+    log_info("Average moment arm max error  = {:1.3f} cm",
+            averageMomentArmMaxError);
+    if (averageMomentArmRMSError > momentArmTolerance) {
+        printWarningMessage("average moment arm", "RMS", momentArmTolerance);
+    }
+    if (averageMomentArmMaxError > momentArmTolerance) {
+        printWarningMessage("average moment arm", "maximum",
+                momentArmTolerance);
     }
 }
 

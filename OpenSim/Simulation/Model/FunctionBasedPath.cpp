@@ -148,9 +148,21 @@ void FunctionBasedPath::produceForces(const SimTK::State& state,
         getCacheVariableValue<SimTK::Vector>(state, _momentArmsCV);
     OPENSIM_ASSERT_ALWAYS(momentArms.size() == (int)_coordinates.size());
 
-    // Produce mobility forces
+    // Compute the "q-like" forces.
+    SimTK::Vector fq = state.getQDot();
+    fq = 0.;
     for (int i = 0; i < (int)_coordinates.size(); ++i) {
-        forceConsumer.consumeGeneralizedForce(state, *_coordinates[i], momentArms[i] * tension);
+        fq[_coordinates[i]->getQIndex(state)] = momentArms[i] * tension;
+    }
+
+    // Convert the "q-like" forces to mobility forces.
+    SimTK::Vector fu(state.getNU(), 0.);
+    getModel().getMultibodySystem().multiplyByNTranspose(state, fq, fu);
+
+    // Pass the mobility forces to the force consumer.
+    for (int i = 0; i < (int)_coordinates.size(); ++i) {
+        forceConsumer.consumeGeneralizedForce(state, *_coordinates[i],
+            fu[_coordinates[i]->getUIndex(state)]);
     }
 }
 

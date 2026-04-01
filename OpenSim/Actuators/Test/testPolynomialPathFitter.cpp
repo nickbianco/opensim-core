@@ -226,6 +226,7 @@ TEST_CASE("Verify fitted path: double pendulum with wrap cylinder") {
         fitter.setModel(model);
         fitter.setCoordinateValues(states);
         fitter.setOutputDirectory(tmp.string());
+        fitter.setNumParallelThreads(1);
         fitter.run();
 
         // Expected number of samples.
@@ -276,7 +277,7 @@ TEST_CASE("Verify fitted path: double pendulum with wrap cylinder") {
         CHECK_THAT(std::sqrt(momentArmQ1MSE),
                    Catch::Matchers::WithinAbs(0, 1e-3));
 
-        std::filesystem::remove_all(tmp);
+        // std::filesystem::remove_all(tmp);
     }
 
     SECTION("Coordinate NaN values are filtered out") {

@@ -497,6 +497,33 @@ bool Coordinate::isConstrained(const SimTK::State& s) const
     return (getLocked(s) || isPrescribed(s) || isDependent(s));
 }
 
+SimTK::QIndex Coordinate::getFirstQIndex(const SimTK::State& s) const
+{
+    return _model->getMatterSubsystem().getMobilizedBody(_bodyIndex)
+                                       .getFirstQIndex(s);
+}
+
+SimTK::QIndex Coordinate::getQIndex(const SimTK::State& s) const
+{
+    return SimTK::QIndex(_model->getMatterSubsystem()
+                                .getMobilizedBody(_bodyIndex)
+                                .getFirstQIndex(s) + _mobilizerQIndex);
+}
+
+SimTK::UIndex Coordinate::getFirstUIndex(const SimTK::State& s) const
+{
+    return _model->getMatterSubsystem().getMobilizedBody(_bodyIndex)
+                                       .getFirstUIndex(s);
+}
+
+SimTK::UIndex Coordinate::getUIndex(const SimTK::State& s) const
+{
+    // TODO: figure out how to go between MobilizerQIndex and MobilizerUIndex
+    // for a coordinate.
+    return SimTK::UIndex(_model->getMatterSubsystem()
+                                .getMobilizedBody(_bodyIndex)
+                                .getFirstUIndex(s) + _mobilizerQIndex);
+}
 
 //-----------------------------------------------------------------------------
 // LOCK

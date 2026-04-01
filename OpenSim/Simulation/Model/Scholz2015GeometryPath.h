@@ -538,19 +538,25 @@ private:
 
         double solve(const SimTK::State& state, const Coordinate& coordinate,
                 const Scholz2015GeometryPath& path) const {
-            // Copy the original state's joint configuration (q) to the solver
-            // state.
+
+            // Construct a qdot vector containing a unit velocity for the
+            // coordinate of interest, and zeros for all other coordinates.
+            SimTK::Vector qdot = _state.getQDot();
+            qdot = 0.;
+            qdot[coordinate.getQIndex(state)] = 1.0;
+
+            // Apply the original state's q to the internal state.
             _state.updQ() = state.getQ();
 
-            // Set all joint speeds (u) to zero, except for the speed of the
-            // coordinate of interest.
-            _state.updU() = 0;
-            coordinate.setSpeedValue(_state, 1.0);
+            // Calculate the corresponding change to u and update the state.
+            SimTK::Vector u(_state.getNU(), 0.);
+            _model->getMultibodySystem().getMatterSubsystem().multiplyByNInv(
+                _state, false, qdot, u);
+            _state.updU() = u;
 
-            // Realize the state at the velocity stage and project the speeds to
-            // satisfy the velocity constraints.
+            // Realize the state at the velocity stage.
             _model->getMultibodySystem().realize(_state, SimTK::Stage::Velocity);
-            // _model->getMultibodySystem().projectU(_state, 1e-10);
+            _model->getMultibodySystem().projectU(_state, 1e-10);
 
             // Compute the moment arm.
             return -path.getLengtheningSpeed(_state);
