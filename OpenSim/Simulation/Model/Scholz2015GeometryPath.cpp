@@ -216,7 +216,7 @@ double Scholz2015GeometryPath::computeMomentArm(const SimTK::State& s,
             new Scholz2015MomentArmSolver(getModel()));
     }
 
-    return _maSolver->solve(s, coord, *this);
+    return _maSolver->solve(s, coord,  *this);
 }
 
 void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
