@@ -33,6 +33,7 @@
 #include <OpenSim/Simulation/Manager/Manager.h>
 #include <OpenSim/Simulation/SimbodyEngine/CoordinateCouplerConstraint.h>
 
+#include <atomic>
 #include <future>
 
 using namespace OpenSim;
@@ -989,27 +990,19 @@ Set<FunctionBasedPath> PolynomialPathFitter::fitPolynomialCoefficients(
     // Pre-compute variables.
     // ----------------------
     const int numForces = (int)forcePaths.size();
-    // Force indexes: one per path-based force (indices into forcePaths).
-    std::vector<int> forceIndexes;
-    forceIndexes.reserve(numForces);
-    for (int i = 0; i < numForces; ++i) {
-        forceIndexes.push_back(i);
-    }
 
     // Build a FunctionBasedPath for each path-based force in the model.
     // -----------------------------------------------------------------
     // Solve A*x = b, where x is the vector of coefficients for the
     // FunctionBasedPath, A is a matrix of polynomial terms, and b is a vector
     // of path lengths and moment arms.
+    std::atomic<int> nextForceIdx(0);
     auto fitForcePolynomialSubset = [&](
-            std::vector<int>::iterator begin_iter,
-            std::vector<int>::iterator end_iter,
             int thread) -> std::vector<std::unique_ptr<FunctionBasedPath>> {
 
         std::vector<std::unique_ptr<FunctionBasedPath>> thesePaths;
-        thesePaths.reserve(std::distance(begin_iter, end_iter));
-        for (auto it = begin_iter; it != end_iter; ++it) {
-            int iforce = *it;
+        int iforce;
+        while ((iforce = nextForceIdx.fetch_add(1)) < numForces) {
             const std::string& forcePath = forcePaths[iforce];
 
             // Check if the current force is dependent on any coordinates in the
@@ -1110,24 +1103,18 @@ Set<FunctionBasedPath> PolynomialPathFitter::fitPolynomialCoefficients(
         return thesePaths;
     };
 
-    // Determine the number of threads and the stride based on the number of
-    // forces and the number of threads.
+    // Determine the number of threads to use based on the number of forces.
     int numThreads = std::min(numForces, get_num_parallel_threads());
-    int stride = static_cast<int>(std::floor(numForces / numThreads));
-    int offset = 0;
 
-    // Divide the polynomial fitting across multiple threads.
+    // Divide the polynomial fitting across multiple threads using dynamic
+    // scheduling: each thread claims the next available force via an atomic
+    // counter, so threads with simpler forces pick up more work rather than
+    // idling while threads with complex forces finish.
     std::vector<std::future<std::vector<std::unique_ptr<FunctionBasedPath>>>>
             futures;
     for (int thread = 0; thread < numThreads; ++thread) {
-        auto begin_iter = forceIndexes.begin() + offset;
-        auto end_iter = (thread == numThreads-1) ?
-                forceIndexes.end() :
-                forceIndexes.begin() + offset + stride;
         futures.push_back(std::async(std::launch::async,
-                        fitForcePolynomialSubset,
-                        begin_iter, end_iter, thread));
-        offset += stride;
+                        fitForcePolynomialSubset, thread));
     }
 
     // Wait for threads to finish and collect the results.
