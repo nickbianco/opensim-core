@@ -914,19 +914,21 @@ void PolynomialPathFitter::filterSampledData(const Model& model,
                 std[i] = std::sqrt(segment.normSqr() / segment.size());
             }
 
-            // Compute the average standard deviation.
-            double avgStd = std.sum() / std.size();
-
             // Find the time points that deviate too far from the nominal
-            // values.
-            int currentNominalIndex = 0;
-            for (int i = 0; i < column.size(); ++i) {
-                double nominal = column[currentNominalIndex];
-                if (std::abs(column[i] - nominal) > threshold * avgStd) {
-                    rejectedTimePoints.push_back(times[i]);
-                }
-                if (i % increment == 0) {
-                    currentNominalIndex += increment;
+            // values. Use the per-frame standard deviation as the threshold
+            // scale so that frames with low variance don't artificially
+            // tighten the threshold for high-variance frames. Skip frames
+            // where the standard deviation is zero (all samples identical),
+            // since no sample can be an outlier relative to that frame.
+            for (int i = 0; i < numOriginalTimes; ++i) {
+                if (std[i] == 0.0) { continue; }
+                int nominalIndex = i * increment;
+                double nominal = column[nominalIndex];
+                for (int j = 1; j < increment; ++j) {
+                    int idx = nominalIndex + j;
+                    if (std::abs(column[idx] - nominal) > threshold * std[i]) {
+                        rejectedTimePoints.push_back(times[idx]);
+                    }
                 }
             }
         }
