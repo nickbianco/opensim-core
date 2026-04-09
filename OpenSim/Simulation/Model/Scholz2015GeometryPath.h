@@ -433,7 +433,10 @@ public:
     double getLengtheningSpeed(const SimTK::State& s) const override;
     double computeMomentArm(const SimTK::State& s,
             const Coordinate& coord) const override;
-    bool isVisualPath() const override { return true; }
+    bool isVisualPath() const override;
+
+    std::vector<std::string>
+    findIndependentCoordinatePaths(const SimTK::State&) const override;
     // @}
 
     //** @name `ForceProducer` interface */
