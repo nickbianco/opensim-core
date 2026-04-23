@@ -379,13 +379,13 @@ void Scholz2015GeometryPath::generateDecorations(
     });
 }
 
-void GeometryPath::extendPreScale(const SimTK::State& s,
+void Scholz2015GeometryPath::extendPreScale(const SimTK::State& s,
         const ScaleSet& scaleSet) {
     Super::extendPreScale(s, scaleSet);
     setPreScaleLength(s, getLength(s));
 }
 
-void GeometryPath::extendPostScale(const SimTK::State& s,
+void Scholz2015GeometryPath::extendPostScale(const SimTK::State& s,
         const ScaleSet& scaleSet) {
     Super::extendPostScale(s, scaleSet);
     getLength(s);
