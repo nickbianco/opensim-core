@@ -204,7 +204,7 @@ mark_as_advanced(OPENSIM_BUILD_INDIVIDUAL_APPS)
 # Moco settings.
 # --------------
 option(OPENSIM_WITH_CASADI
-        "Build CasADi support for Moco (MocoCasADiSolver)." OFF)
+        "Build CasADi support for Moco (MocoCasADiSolver)." ON)
 add_feature_info(WITH_CASADI OPENSIM_WITH_CASADI
         "Build CasADi support for Moco (OPENSIM_WITH_CASADI)")
 
