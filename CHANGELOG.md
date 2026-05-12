@@ -6,8 +6,18 @@ request related to the change, then we may provide the commit.
 
 This is not a comprehensive list of changes but rather a hand-curated collection of the more notable ones. For a comprehensive history, see the [OpenSim Core GitHub repo](https://github.com/opensim-org/opensim-core).
 
+
+v4.6.1
+======
+- Added `CantileverFreeBeamJoint`, a joint type providing a lightweight way for modeling flexible structures (e.g., the bending of the spinal column in a human or animal skeleton). (#4227)
+- Added `ExponentialCoordinateLimitForce`, a force element for enforcing coordinate limits using exponential spring functions. (#4231)
+- Added `CoordinateLinearStopForce`, a force element for enforcing coordinate limits using a
+linear spring force and Hunt and Crossley-like damping. (#4329)
+- Updated `ExponentialCoordinateLimitForce` to use `Socket` to define the connection to a particular `Coordinate`. (#4329)
+
+
 v4.6
-=====
+====
 - Move BoolLike class outside of template Array class for the `VS 17.14` linker (#4081)
 - Improvements for the `XsensDataReader`. Add a configuration option to XSensDataReaderSettings to specify a known data rate (sampling frequency). Automatically detect the delimiter used in the file. Support the new Xsens export rotations formats (Rotation Matrix, Quaternion, or Euler angles) values from Xsens files. Update the parser to handle the path separator for data_folder and fix a memory leak. Verify integrity and uniformity of all files. Add tests with additional new and old Xsens formats. (#4063)
 - Remove `using namespace SimTK;` from core OpenSim files to prevent namespace conflicts and operator overshadowing (#4066)
@@ -54,13 +64,10 @@ performance and stability in wrapping solutions.
 - Fixed an issue in `PolynomialPathFitter` where the process would segfault if too few coordinate samples were used. (#4280)
 - Fixed an issue in `PolynomialPathFitter` where the process assign threads to model forces without a wrapping path. (#4280)
 - `PolynomialPathFitter` now gracefully handles model configurations that lead to invalid path computations due to random sampling. (#4280)
-- Added `CantileverFreeBeamJoint`, a joint type providing a lightweight way for modeling flexible structures (e.g., the bending of the spinal column in a human or animal skeleton). (#4227)
-- Added `ExponentialCoordinateLimitForce`, a force element for enforcing coordinate limits using exponential spring functions. (#4231)
 - Implemented `extendPreScale` and `extendPostScale` for `Scholz2015GeometryPath`. Now, scaling a model using `Scholz2015GeometryPath` paths will update `Muscle` tendon slack lengths and optimal fiber lengths. (#4325)
-- Added `CoordinateLinearStopForce`, a force element for enforcing coordinate limits using a
-linear spring force and Hunt and Crossley-like damping. (#4329)
-- Updated `ExponentialCoordinateLimitForce` to use `Socket` to define the connection to a particular `Coordinate`. (#4329)
 - Fix crash deserializing xml files that are missing OpenSimDocument tags. (#4336)
+- Added `exampleExponentialContactForce`, including C++, Matlab, and Python variants. (#4318)
+
 
 v4.5.2
 ======
