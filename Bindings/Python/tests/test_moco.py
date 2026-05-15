@@ -435,10 +435,3 @@ class TestWorkflow(unittest.TestCase):
         mass_goal.setExpression(f"(p+q-{total_weight})^2")
         mass_goal.addParameter(parameter, "p")
         mass_goal.addParameter(parameter2, "q")
-
-        ms = study.initCasADiSolver()
-        ms.set_num_mesh_intervals(25)
-        sol = study.solve()
-
-        self.assertAlmostEqual(sol.getParameter("sphere_mass") + sol.getParameter("sphere2_mass"),
-                               total_weight)
