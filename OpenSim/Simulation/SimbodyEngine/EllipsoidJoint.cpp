@@ -111,13 +111,27 @@ extendScale(const SimTK::State& s, const ScaleSet& scaleSet)
 {
     Super::extendScale(s, scaleSet);
 
-    // Get scale factors (if an entry for the parent Frame's base Body exists).
-    const Vec3& scaleFactors = getScaleFactors(scaleSet, getParentFrame());
-    if (scaleFactors == ModelComponent::InvalidScaleFactors)
+    // Get the scale factors in the parent frame, if an entry for the parent
+    // Frame's base Body exists.
+    const Vec3& s_P = getScaleFactors(scaleSet, getParentFrame());
+    if (s_P == ModelComponent::InvalidScaleFactors)
         return;
 
-    //TODO: Need to scale transforms appropriately, given an arbitrary axis.
-    upd_radii_x_y_z() = get_radii_x_y_z().elementwiseMultiply(scaleFactors);
+    // Get the rotation of the mobilizer offset from F with respect to the
+    // parent frame P.
+    SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
+    const Rotation& R_PF = X_PF.R();
+
+    // Stretch the axes of F (i.e., the columns of R_PF) by the parent body
+    // scale factors s_P. The magnitude of each stretched column is the scale
+    // factor along that axis of F.
+    Vec3 s_F;
+    for (int i = 0; i < 3; ++i) {
+        s_F[i] = s_P.elementwiseMultiply(Vec3(R_PF.col(i))).norm();
+    }
+
+    // Update the ellipsoid radii by the scale factors along each axis of F.
+    upd_radii_x_y_z() = get_radii_x_y_z().elementwiseMultiply(s_F);
 }
 
 //=============================================================================
