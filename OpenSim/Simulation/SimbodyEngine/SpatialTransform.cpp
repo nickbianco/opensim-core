@@ -164,11 +164,12 @@ std::vector<SimTK::Vec3> SpatialTransform::getAxes() const {
 // SCALING
 //=============================================================================
 void SpatialTransform::scale(const SimTK::Vec3 scaleFactors) {
-    // Scale the spatial transform functions of translations only
+    // Scale the spatial transform functions of translations only.
     for (int i = 3; i < NumTransformAxes; i++) {
         TransformAxis& transform = updTransformAxis(i);
         if (transform.hasFunction()) {
             Function& function = transform.updFunction();
+
             // If the function is a linear function with coefficients of 1.0 and
             // 0.0, do not scale it because this transform axis represents a
             // degree of freedom.
@@ -178,12 +179,18 @@ void SpatialTransform::scale(const SimTK::Vec3 scaleFactors) {
                 if (coefficients[0] == 1.0 && coefficients[1] == 0.0)
                     continue;
             }
+
+            // Use the axis of the transform to "pick off" the appropriate scale
+            // factor from the input scale factor Vec3.
+            //
+            // TODO: This assumes that the transform axis is aligned with one of
+            // the basis vectors of the mobilizer offset frame F. If this is not
+            // the case, then this operation computes some sort of weighted
+            // average of the input scale factors, which is generally incorrect.
             SimTK::Vec3 axis;
             transform.getAxis(axis);
-            // we want weighted aggregate of scale factors but to ignore the
-            // sign ignoring sign due to issue #3991 resulting -ve scale
-            // factor
             double scaleFactor = ~axis.abs() * scaleFactors;
+
             // If the function is already a MultiplierFunction, just update its
             // scale factor. Otherwise, make a MultiplierFunction from it and
             // make the transform axis use the new MultiplierFunction.

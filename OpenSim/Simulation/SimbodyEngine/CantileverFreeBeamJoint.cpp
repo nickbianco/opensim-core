@@ -125,3 +125,31 @@ void CantileverFreeBeamJoint::generateDecorations(bool fixed,
         prevPoint_G = nextPoint_G;
     }
 }
+
+//=============================================================================
+// SCALING
+//=============================================================================
+void CantileverFreeBeamJoint::
+extendScale(const SimTK::State& s, const ScaleSet& scaleSet)
+{
+    Super::extendScale(s, scaleSet);
+
+    // Get the scale factors in the parent frame, if an entry for the parent
+    // Frame's base Body exists.
+    const Vec3& s_P = getScaleFactors(scaleSet, getParentFrame());
+    if (s_P == ModelComponent::InvalidScaleFactors)
+        return;
+
+    // Get the rotation of the mobilizer offset from F with respect to the
+    // parent frame P.
+    SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
+    const Rotation& R_PF = X_PF.R();
+
+    // Stretch the z-axis of F (i.e., the third column of R_PF) by the parent
+    // body scale factors s_P. The magnitude of the stretched column is the
+    // scale factor along the z-axis of F.
+    Real s_Fz = s_P.elementwiseMultiply(Vec3(R_PF.col(2))).norm();
+
+    // Update the beam length by the scale factor along the z-axis of F.
+    upd_beam_length() = get_beam_length() * s_Fz;
+}
