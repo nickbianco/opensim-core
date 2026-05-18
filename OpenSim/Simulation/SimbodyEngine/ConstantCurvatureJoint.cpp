@@ -672,8 +672,6 @@ public:
         return new ConstantCurvatureJointImpl(*this);
     };
 
-    bool getScalingEnabled() const override { return false; }
-
     SimTK::Transform calcMobilizerTransformFromQ(
             const SimTK::State& s, int nq, const SimTK::Real* q) const {
         return OpenSim::ConstantCurvatureJoint::getTransform(
