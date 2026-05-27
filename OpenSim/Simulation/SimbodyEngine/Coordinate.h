@@ -226,6 +226,10 @@ public:
         return _mobilizerQIndex;
     };
     SimTK::MobilizedBodyIndex getBodyIndex() const { return _bodyIndex; };
+    SimTK::QIndex getFirstQIndex(const SimTK::State&) const;
+    SimTK::QIndex getQIndex(const SimTK::State&) const;
+    SimTK::UIndex getFirstUIndex(const SimTK::State&) const;
+    SimTK::UIndex getUIndex(const SimTK::State&) const;
     /**@}**/
 
     /* For internal consistency checking. Returns the user-specified MotionType

@@ -26,7 +26,6 @@
 
 #include <OpenSim/Simulation/Model/ForceConsumer.h>
 #include <OpenSim/Simulation/SimbodyEngine/Coordinate.h>
-#include <OpenSim/Simulation/Model/Model.h>
 
 #include <optional>
 
@@ -189,6 +188,14 @@ int Scholz2015GeometryPath::getNumPathElements() const {
     return getProperty_path_elements().size();
 }
 
+const std::string& Scholz2015GeometryPath::getAlgorithm() const {
+    return get_algorithm();
+}
+
+void Scholz2015GeometryPath::setAlgorithm(const std::string& algorithm) {
+    set_algorithm(algorithm);
+}
+
 //=============================================================================
 // ABSTRACT PATH INTERFACE
 //=============================================================================
@@ -206,7 +213,7 @@ double Scholz2015GeometryPath::computeMomentArm(const SimTK::State& s,
 
     if (!_maSolver) {
         const_cast<Self*>(this)->_maSolver.reset(
-            new MomentArmSolver(getModel()));
+            new Scholz2015MomentArmSolver(getModel()));
     }
 
     return _maSolver->solve(s, coord,  *this);
@@ -362,7 +369,14 @@ void Scholz2015GeometryPath::extendAddToSystem(
     cable.setSmoothnessTolerance(1e-5);
     cable.setCurveSegmentAccuracy(1e-10);
     cable.setSolverMaxIterations(50);
-    cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
+    if (getAlgorithm() == "scholz2015") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
+    } else if (getAlgorithm() == "minimum_length") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::MinimumLength);
+    } else {
+        OPENSIM_THROW_FRMOBJ(Exception,
+            "Invalid algorithm: {}.", getAlgorithm());
+    }
     _index = cable.getIndex();
 }
 
@@ -419,6 +433,7 @@ void Scholz2015GeometryPath::extendPostScale(const SimTK::State& s,
 //=============================================================================
 void Scholz2015GeometryPath::constructProperties() {
     constructProperty_path_elements();
+    constructProperty_algorithm("scholz2015");
 }
 
 const Scholz2015GeometryPathObstacle* Scholz2015GeometryPath::getObstacle(

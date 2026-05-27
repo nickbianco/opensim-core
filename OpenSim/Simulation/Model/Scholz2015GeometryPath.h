@@ -27,6 +27,7 @@
 #include <OpenSim/Simulation/Model/AbstractGeometryPath.h>
 
 #include <OpenSim/Simulation/Model/ContactGeometry.h>
+#include <OpenSim/Simulation/Model/Model.h>
 #include <OpenSim/Simulation/Model/PathPoint.h>
 #include <OpenSim/Simulation/MomentArmSolver.h>
 
@@ -425,6 +426,16 @@ public:
      */
     int getNumPathElements() const;
 
+    /**
+     * Get the algorithm used for computing the path.
+     */
+    const std::string& getAlgorithm() const;
+
+    /**
+     * Set the algorithm used for computing the path.
+     */
+    void setAlgorithm(const std::string& algorithm);
+
     // @}
 
     //** @name `AbstractGeometryPath` interface */
@@ -446,6 +457,9 @@ private:
     // PROPERTIES
     OpenSim_DECLARE_LIST_PROPERTY(path_elements, Scholz2015GeometryPathElement,
         "The list of elements (path points or obstacles) defining the path.");
+    OpenSim_DECLARE_PROPERTY(algorithm, std::string,
+        "The algorithm to use for computing the path. Valid options are : "
+        "'scholz2015' and 'minimum_length' (default: 'scholz2015').");
 
     // MODEL COMPONENT INTERFACE
     void extendConnectToModel(Model& model) override;
@@ -515,7 +529,46 @@ private:
             SimTK::CableSpanViaPointIndex, int>>;
     mutable SimTK::ResetOnCopy<ViaPointIndexes> _viaPointIndexes;
 
-    SimTK::ResetOnCopy<std::unique_ptr<MomentArmSolver> > _maSolver;
+    // MOMENT ARM SOLVER
+    class Scholz2015MomentArmSolver : public Object {
+    OpenSim_DECLARE_CONCRETE_OBJECT(Scholz2015MomentArmSolver, Object);
+    public:
+        explicit Scholz2015MomentArmSolver(const Model& model) {
+            _model = &model;
+            _state = model.getWorkingState();
+        }
+
+        double solve(const SimTK::State& state, const Coordinate& coordinate,
+                const Scholz2015GeometryPath& path) const {
+
+            // Construct a qdot vector containing a unit velocity for the
+            // coordinate of interest, and zeros for all other coordinates.
+            SimTK::Vector qdot = _state.getQDot();
+            qdot = 0.;
+            qdot[coordinate.getQIndex(state)] = 1.0;
+
+            // Apply the original state's q to the internal state.
+            _state.updQ() = state.getQ();
+
+            // Calculate the corresponding change to u and update the state.
+            SimTK::Vector u(_state.getNU(), 0.);
+            _model->getMultibodySystem().getMatterSubsystem().multiplyByNInv(
+                _state, false, qdot, u);
+            _state.updU() = u;
+
+            // Realize the state at the velocity stage.
+            _model->getMultibodySystem().realize(_state, SimTK::Stage::Velocity);
+            _model->getMultibodySystem().projectU(_state, 1e-10);
+
+            // Compute the moment arm.
+            return -path.getLengtheningSpeed(_state);
+        }
+
+    private:
+        SimTK::ReferencePtr<const Model> _model;
+        mutable SimTK::State _state;
+    };
+    SimTK::ResetOnCopy<std::unique_ptr<Scholz2015MomentArmSolver> > _maSolver;
 };
 
 
