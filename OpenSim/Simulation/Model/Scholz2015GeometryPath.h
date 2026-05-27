@@ -536,6 +536,9 @@ private:
         explicit Scholz2015MomentArmSolver(const Model& model) {
             _model = &model;
             _state = model.getWorkingState();
+            _bodyForces = model.getMultibodySystem().getRigidBodyForces(
+                    _state, SimTK::Stage::Instance);
+            _coupling = _state.getU();
         }
 
         double solve(const SimTK::State& state, const Coordinate& coordinate,
@@ -543,9 +546,9 @@ private:
 
             // Construct a qdot vector containing a unit velocity for the
             // coordinate of interest, and zeros for all other coordinates.
-            SimTK::Vector qdot = _state.getQDot();
-            qdot = 0.;
-            qdot[coordinate.getQIndex(state)] = 1.0;
+            SimTK::QIndex qIndex = coordinate.getQIndex(state);
+            SimTK::Vector qdot(_state.getNQ(), 0.0);
+            qdot[qIndex] = 1.0;
 
             // Apply the original state's q to the internal state.
             _state.updQ() = state.getQ();
@@ -556,17 +559,44 @@ private:
                 _state, false, qdot, u);
             _state.updU() = u;
 
-            // Realize the state at the velocity stage.
+            // Realize the state at the velocity stage and satisfy all
+            // velocity-level constraints.
             _model->getMultibodySystem().realize(_state, SimTK::Stage::Velocity);
             _model->getMultibodySystem().projectU(_state, 1e-10);
 
-            // Compute the moment arm.
-            return -path.getLengtheningSpeed(_state);
+            // Compute the coupling vector by checking how speeds of other
+            // mobilities changed normalized by how much the speed of the
+            // coordinate of interest changed.
+            _coupling = _state.getU() / _state.getQDot()[qIndex];
+
+            // Apply a tension of unity to the bodies of the path.
+            _state.updU() = 0;
+            _bodyForces *= 0;
+            _generalizedForces = 0;
+            SimTK::Vector pathMobilityForces(_state.getNU(), 0.0);
+            path.addInEquivalentForces(_state, 1.0, _bodyForces,
+                pathMobilityForces);
+
+            // Convert body spatial forces F to equivalent mobility forces f
+            // using the system Jacobian: f = ~J(q) * F.
+            _model->getMultibodySystem().getMatterSubsystem()
+                    .multiplyBySystemJacobianTranspose(
+                            _state, _bodyForces, _generalizedForces);
+            _generalizedForces += pathMobilityForces;
+
+            // Moment-arm is the effective torque (since tension is 1) at the
+            // coordinate of interest taking into account the generalized forces
+            // also acting on other coordinates that are coupled via
+            // kinematic constraints.
+            return ~_coupling*_generalizedForces;
         }
 
     private:
         SimTK::ReferencePtr<const Model> _model;
         mutable SimTK::State _state;
+        mutable SimTK::Vector _coupling;
+        mutable SimTK::Vector _generalizedForces;
+        mutable SimTK::Vector_<SimTK::SpatialVec> _bodyForces;
     };
     SimTK::ResetOnCopy<std::unique_ptr<Scholz2015MomentArmSolver> > _maSolver;
 };
