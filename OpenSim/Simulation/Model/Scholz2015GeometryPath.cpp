@@ -26,8 +26,11 @@
 
 #include <OpenSim/Simulation/Model/ForceConsumer.h>
 #include <OpenSim/Simulation/SimbodyEngine/Coordinate.h>
+<<<<<<< HEAD
 #include <OpenSim/Simulation/Model/Model.h>
 #include <OpenSim/Simulation/SimulationUtilities.h>
+=======
+>>>>>>> 62d3dfba4 (Add various custom modifications needed for the athlete model)
 
 #include <optional>
 
@@ -201,6 +204,14 @@ bool Scholz2015GeometryPath::getUseWarmStart() const {
     return get_use_warm_start();
 }
 
+const std::string& Scholz2015GeometryPath::getAlgorithm() const {
+    return get_algorithm();
+}
+
+void Scholz2015GeometryPath::setAlgorithm(const std::string& algorithm) {
+    set_algorithm(algorithm);
+}
+
 //=============================================================================
 // ABSTRACT PATH INTERFACE
 //=============================================================================
@@ -218,7 +229,7 @@ double Scholz2015GeometryPath::computeMomentArm(const SimTK::State& s,
 
     if (!_maSolver) {
         const_cast<Self*>(this)->_maSolver.reset(
-            new MomentArmSolver(getModel()));
+            new Scholz2015MomentArmSolver(getModel()));
     }
 
     return _maSolver->solve(s, coord,  *this);
@@ -408,6 +419,15 @@ void Scholz2015GeometryPath::extendAddToSystem(
     cable.setSolverMaxIterations(50);
     cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
     cable.setUseWarmStart(get_use_warm_start());
+
+    if (getAlgorithm() == "scholz2015") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::Scholz2015);
+    } else if (getAlgorithm() == "minimum_length") {
+        cable.setAlgorithm(SimTK::CableSpanAlgorithm::MinimumLength);
+    } else {
+        OPENSIM_THROW_FRMOBJ(Exception,
+            "Invalid algorithm: {}.", getAlgorithm());
+    }
     _index = cable.getIndex();
 }
 
@@ -465,6 +485,7 @@ void Scholz2015GeometryPath::extendPostScale(const SimTK::State& s,
 void Scholz2015GeometryPath::constructProperties() {
     constructProperty_path_elements();
     constructProperty_use_warm_start(false);
+    constructProperty_algorithm("scholz2015");
 }
 
 const Scholz2015GeometryPathObstacle* Scholz2015GeometryPath::getObstacle(

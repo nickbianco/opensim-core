@@ -183,7 +183,8 @@ void EllipsoidJoint::generateDecorations
     if (!get_Appearance().get_visible()) return;
     SimTK::DecorativeEllipsoid ellipsoid(get_radii_x_y_z());
     const OpenSim::PhysicalFrame& frame = getParentFrame();
-    ellipsoid.setColor(Vec3(0.0, 1.0, 1.0));
+    ellipsoid.setColor(get_Appearance().get_color());
+    ellipsoid.setOpacity(get_Appearance().get_opacity());
     ellipsoid.setBodyId(frame.getMobilizedBodyIndex());
     ellipsoid.setTransform(frame.findTransformInBaseFrame());
     geometryArray.push_back(ellipsoid);
