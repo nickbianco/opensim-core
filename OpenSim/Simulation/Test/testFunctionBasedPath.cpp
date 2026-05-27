@@ -22,11 +22,20 @@
  * -------------------------------------------------------------------------- */
 
 #include <OpenSim/Simulation/Model/FunctionBasedPath.h>
+
+#include <OpenSim/Actuators/ModelFactory.h>
+#include <OpenSim/Actuators/ModelOperators.h>
+#include <OpenSim/Actuators/PolynomialPathFitter.h>
 #include <OpenSim/Common/CommonUtilities.h>
+#include <OpenSim/Common/Constant.h>
 #include <OpenSim/Common/PolynomialFunction.h>
 #include <OpenSim/Common/MultivariatePolynomialFunction.h>
-#include <OpenSim/Actuators/ModelFactory.h>
+#include <OpenSim/Simulation/StatesTrajectory.h>
+#include <OpenSim/Simulation/Control/PrescribedController.h>
+#include <OpenSim/Simulation/Manager/Manager.h>
 #include <OpenSim/Simulation/Model/PathActuator.h>
+#include <OpenSim/Simulation/Model/Scholz2015GeometryPath.h>
+#include <OpenSim/Simulation/SimbodyEngine/EllipsoidJoint.h>
 
 #include <catch2/catch_all.hpp>
 
@@ -370,4 +379,120 @@ TEST_CASE("testFunctionBasedPath") {
         CHECK_THAT(genForce_y, WithinAbs(residuals[1], tol));
     }
 
+}
+
+TEST_CASE("Test qdot != u") {
+
+    // An EllipsoidJoint has generalized speeds equal to angular velocities
+    // (u = omega), not the time derivatives of the Euler angle coordinates
+    // (u != qdot). This test checks that FunctionBasedPath produces the same
+    // mobility forces as a Scholz2015GeometryPath in this case.
+
+    std::filesystem::path tmp = "qdot_not_equal_u";
+    double tension = 0.1;
+    double tol = 1e-4;
+
+    // Build a model with a single body connected to ground via an
+    // EllipsoidJoint.
+    Model model;
+    model.setGravity(SimTK::Vec3(0));
+
+    auto* body = new Body("body", 1.0, SimTK::Vec3(0),
+            SimTK::Inertia::brick(SimTK::Vec3(0.05)));
+    body->attachGeometry(new Brick(SimTK::Vec3(0.05)));
+    model.addBody(body);
+
+    auto* joint = new EllipsoidJoint("ellipsoid_joint",
+            model.getGround(), SimTK::Vec3(0), SimTK::Vec3(-SimTK::Pi/2., 0, 0),
+            *body, SimTK::Vec3(0), SimTK::Vec3(0),
+            SimTK::Vec3(0.5, 0.5, 0.3));
+    joint->upd_Appearance().set_opacity(0.5);
+    model.addJoint(joint);
+    model.finalizeConnections();
+
+    // Add a PathActuator whose path is a Scholz2015GeometryPath.
+    auto* actu = new PathActuator();
+    actu->setName("actuator");
+    actu->setOptimalForce(1);
+    actu->set_path(Scholz2015GeometryPath());
+    model.addComponent(actu);
+    auto& path = actu->updPath<Scholz2015GeometryPath>();
+    path.appendPathPoint(model.getGround(), SimTK::Vec3(0.1, 0.1, 0.2));
+    path.appendPathPoint(*body, SimTK::Vec3(0.05, 0.05, 0.05));
+
+    // Add a PrescribedController to apply a constant control to the actuator.
+    PrescribedController* controller = new PrescribedController();
+    controller->setName("controller");
+    controller->addActuator(*actu);
+    controller->prescribeControlForActuator("actuator", Constant(tension));
+    model.addController(controller);
+
+    // Finalize the system.
+    model.finalizeConnections();
+    SimTK::State state = model.initSystem();
+    state.updQ()[0] = -0.5;
+    state.updQ()[1] = -0.5;
+
+    // Run a short forward simulation to generate a trajectory for fitting
+    // function-based paths.
+    Manager manager(model);
+    manager.setRecordStatesTrajectory(true);
+    manager.setIntegratorMaximumStepSize(0.01);
+    manager.initialize(state);
+    manager.integrate(1.0);
+    TimeSeriesTable states = manager.getStatesTable();
+    StatesTrajectory statesTraj = manager.getStatesTrajectory();
+
+    // Use PolynomialPathFitter to fit function-based paths.
+    PolynomialPathFitter fitter;
+    fitter.setModel(ModelProcessor(model));
+    fitter.setCoordinateValues(states);
+    fitter.setMaximumPolynomialOrder(5);
+    fitter.setNumSamplesPerFrame(20);
+    fitter.setGlobalCoordinateSamplingBounds({-5, 5});
+    fitter.setMomentArmTolerance(tol);
+    fitter.setPathLengthTolerance(tol);
+    fitter.setOutputDirectory(tmp.string());
+    fitter.run();
+
+    // Create a model with the function-based path.
+    ModelProcessor modelProcessor = ModelProcessor(model) |
+            ModOpReplacePathsWithFunctionBasedPaths(
+                    tmp / "model_FunctionBasedPathSet.xml");
+    Model modelFBP = modelProcessor.process();
+    SimTK::State stateFBP = modelFBP.initSystem();
+
+
+    // Check that the function-based path model produces the same mobility
+    // forces as the original model.
+    auto calcResiduals = [tension](const Model& model,
+            const SimTK::State& stateRef,
+            SimTK::State& state) -> SimTK::Vector {
+        model.getCoordinateSet()[0].setValue(state, stateRef.getQ()[0]);
+        model.getCoordinateSet()[1].setValue(state, stateRef.getQ()[1]);
+        model.getCoordinateSet()[2].setValue(state, stateRef.getQ()[2]);
+        model.getCoordinateSet()[0].setSpeedValue(state, stateRef.getU()[0]);
+        model.getCoordinateSet()[1].setSpeedValue(state, stateRef.getU()[1]);
+        model.getCoordinateSet()[2].setSpeedValue(state, stateRef.getU()[2]);
+        model.setControls(state, createVector({tension}));
+        model.realizeAcceleration(state);
+
+        SimTK::Vector residuals(2, 0.0);
+        model.getMatterSubsystem().calcResidualForce(state,
+                SimTK::Vector(3, 0.0),
+                SimTK::Vector_<SimTK::SpatialVec>(2,
+                    SimTK::SpatialVec(SimTK::Vec3(0), SimTK::Vec3(0))),
+                state.getUDot(),
+                SimTK::Vector(0),
+                residuals);
+        return residuals;
+    };
+
+    for (const auto& stateRef : statesTraj) {
+        SimTK::Vector residuals = calcResiduals(model, stateRef, state);
+        SimTK::Vector residualsFBP = calcResiduals(modelFBP, stateRef, stateFBP);
+        CHECK_THAT(residuals[0], WithinAbs(residualsFBP[0], tol));
+        CHECK_THAT(residuals[1], WithinAbs(residualsFBP[1], tol));
+        CHECK_THAT(residuals[2], WithinAbs(residualsFBP[2], tol));
+    }
 }
