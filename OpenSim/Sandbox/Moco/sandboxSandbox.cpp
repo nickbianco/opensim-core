@@ -33,7 +33,7 @@ int main() {
     const auto& path = model.getMuscles().get("triceps_long_r").getPath();
 
 
-    elbow_flex.setValue(state, 0.0*SimTK::Pi/180.);
+    elbow_flex.setValue(state, 100.0*SimTK::Pi/180.);
     model.realizePosition(state);
     double moment_arm = path.computeMomentArm(state, elbow_flex);
     std::cout << "Moment arm: " << moment_arm << std::endl;
