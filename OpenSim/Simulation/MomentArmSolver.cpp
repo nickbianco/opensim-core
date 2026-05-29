@@ -76,6 +76,13 @@ double MomentArmSolver::solve(const SimTK::State& state,
     // apply a tension of unity to the bodies of the path
     SimTK::Vector pathDependentMobilityForces(s_ma.getNU(), 0.0);
     path.addInEquivalentForces(s_ma, 1.0, _bodyForces, pathDependentMobilityForces);
+    std::cout << "Body forces from addInEquivalentForces: " << std::endl;
+    const BodySet& bodySet = getModel().getBodySet();
+    for (int bi = 0; bi < bodySet.getSize(); ++bi) {
+        const Body& body = bodySet.get(bi);
+        SimTK::MobilizedBodyIndex mobodIndex = body.getMobilizedBodyIndex();
+        std::cout << "  " << body.getName() << ": " << _bodyForces[mobodIndex] << std::endl;
+    }
 
     //_bodyForces.dump("bodyForces from addInEquivalentForcesOnBodies");
 
@@ -83,11 +90,17 @@ double MomentArmSolver::solve(const SimTK::State& state,
     // geometry (no dynamics required): f = ~J(q) * F.
     getModel().getMultibodySystem().getMatterSubsystem()
         .multiplyBySystemJacobianTranspose(s_ma, _bodyForces, _generalizedForces);
+    std::cout << "Generalized forces from multiplyBySystemJacobianTranspose: " << _generalizedForces << std::endl;
 
     _generalizedForces += pathDependentMobilityForces;
+
+    std::cout << "Generalized forces after adding path-dependent mobility forces: " << _generalizedForces << std::endl;
     // Moment-arm is the effective torque (since tension is 1) at the 
     // coordinate of interest taking into account the generalized forces also 
     // acting on other coordinates that are coupled via constraint.
+
+    std::cout << "Coupling vector: " << _coupling << std::endl;
+
     return ~_coupling*_generalizedForces;
 }
 

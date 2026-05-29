@@ -20,9 +20,25 @@
 // code during development.
 
 #include <OpenSim/Moco/osimMoco.h>
+#include <OpenSim/Simulation/VisualizerUtilities.h>
 
 using namespace OpenSim;
 
 int main() {
+
+    Model model("athlete.osim");
+    SimTK::State state = model.initSystem();
+
+    Coordinate& elbow_flex = model.updCoordinateSet().get("elbow_flex_r");
+    const auto& path = model.getMuscles().get("triceps_long_r").getPath();
+
+
+    elbow_flex.setValue(state, 0.0*SimTK::Pi/180.);
+    model.realizePosition(state);
+    double moment_arm = path.computeMomentArm(state, elbow_flex);
+    std::cout << "Moment arm: " << moment_arm << std::endl;
+
+    VisualizerUtilities::showModel(model);
+
     return EXIT_SUCCESS;
 }

@@ -1,0 +1,40 @@
+[2026-05-28 14:16:35.144] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 14:16:35.208] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 14:16:35.239] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 15:14:41.925] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 15:14:41.995] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 15:14:42.029] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:11:45.910] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:11:45.972] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:11:46.007] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:14:37.263] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:14:37.330] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:14:37.366] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:19:33.540] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:19:33.604] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:19:33.638] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:22:48.182] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:22:48.243] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:22:48.273] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:33:28.936] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:35:22.027] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:35:22.087] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:35:22.116] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:36:32.262] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:36:32.321] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:36:32.351] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 16:41:31.304] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:46:06.411] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:46:17.474] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:45.816] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:45.951] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:46.107] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:46.269] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:46.428] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:49:46.636] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 16:57:41.172] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:57:41.227] [info] 'triceps_long_r' Parameter update for the damped-model: ActiveForceLengthCurve minimum value was 0.1 but is now 0.
+[2026-05-28 16:57:41.254] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 17:39:44.563] [info] Loaded model athlete_model from file athlete.osim
+[2026-05-28 17:42:20.725] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
+[2026-05-28 17:48:08.440] [info] Loaded model athlete_model from file /Users/nbianco/Developer/opensim/worktrees/moment_arms/Bindings/Python/examples/Wrapping/athlete.osim
