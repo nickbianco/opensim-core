@@ -442,6 +442,10 @@ public:
             ForceConsumer& consumer) const override;
     // @}
 
+    void resetWarmStart(SimTK::State& s) const {
+        getCableSpan().resetWarmStart(s);
+    }
+
 private:
     // PROPERTIES
     OpenSim_DECLARE_LIST_PROPERTY(path_elements, Scholz2015GeometryPathElement,

@@ -59,9 +59,16 @@ Refer to Moment-arm Theory document by Michael Sherman for details.
 **********************************************************************************/
 double MomentArmSolver::solve(const SimTK::State& state,
         const Coordinate& aCoord, const AbstractGeometryPath& path) const {
-    //Local modifiable copy of the state
+    // Copy the full state rather than only Q. For path types whose wrapping is
+    // solved by a shooting method with warm-starting (e.g. CableSpan), copying
+    // only Q would leave _stateCopy's auto-update discrete variable (the warm-
+    // start) at its previous configuration. If Q then changes by a large amount,
+    // the warm-start may cause convergence to the wrong wrapping topology.
+    // Copying the full state propagates the caller's already-realized Position
+    // stage (including the correct AUDV) into _stateCopy, so the CableSpan is
+    // never re-solved from a stale configuration.
     SimTK::State& s_ma = _stateCopy;
-    s_ma.updQ() = state.getQ();
+    s_ma = state;
 
     // compute the coupling between coordinates due to constraints
     _coupling = computeCouplingVector(s_ma, aCoord);

@@ -11,6 +11,6 @@ if (BUILD_API_EXAMPLES)
 endif()
 add_subdirectory(Tests)
 
-#add_subdirectory(Sandbox)
+add_subdirectory(Sandbox)
 
 install(FILES OpenSim.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/OpenSim")
