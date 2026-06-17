@@ -181,8 +181,7 @@ TEST_CASE("Serialize OpenSim objects") {
 }
 
 TEST_CASE("Test unrecognized types") {
-        REQUIRE_THROW(Object::newInstanceOfType("Unrecognized"));
-}
+        REQUIRE_THROWS(Object::newInstanceOfType("Unrecognized"));
 }
 
 TEST_CASE("Test old format no enclosing tags") {
