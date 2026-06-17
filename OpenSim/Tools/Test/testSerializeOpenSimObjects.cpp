@@ -181,22 +181,14 @@ TEST_CASE("Serialize OpenSim objects") {
 }
 
 TEST_CASE("Test unrecognized types") {
-    bool caughtException = false;
-    try {
-        Object* newObject = Object::newInstanceOfType("Unrecognized");
-    } catch (Exception&) {
-        caughtException = true;
-    }
-    CHECK(caughtException);
+        REQUIRE_THROW(Object::newInstanceOfType("Unrecognized"));
+}
 }
 
 TEST_CASE("Test old format no enclosing tags") {
-    bool caughtException = false;
     { InverseKinematicsTool m; }
-    try {
-        OpenSim::Object* obj = OpenSim::Object::makeObjectFromFile("ikToolNoDocumentTag.xml");
-        std::cout << obj->getConcreteClassName() << std::endl;
-        REQUIRE(obj->getConcreteClassName() == "InverseKinematicsTool");
-    } catch (Exception&) { caughtException = true; }
-    CHECK(!caughtException);
+    
+    OpenSim::Object* obj = nullptr;
+    REQUIRE_NOTHROW(obj = OpenSim::Object::makeObjectFromFile("ikToolNoDocumentTag.xml"));
+    REQUIRE(obj->getConcreteClassName() == "InverseKinematicsTool");
 }
