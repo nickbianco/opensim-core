@@ -16,7 +16,7 @@ on:
 
 jobs:
   windows:
-    runs-on: windows-2025
+    runs-on: windows-2022
     name: Windows
 
     outputs:
