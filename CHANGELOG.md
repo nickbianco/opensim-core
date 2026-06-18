@@ -60,6 +60,7 @@ performance and stability in wrapping solutions.
 - Added `CoordinateLinearStopForce`, a force element for enforcing coordinate limits using a
 linear spring force and Hunt and Crossley-like damping. (#4329)
 - Updated `ExponentialCoordinateLimitForce` to use `Socket` to define the connection to a particular `Coordinate`. (#4329)
+- Fix crash deserializing xml files that are missing OpenSimDocument tags. (#4336)
 
 v4.5.2
 ======
