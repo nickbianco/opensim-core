@@ -104,28 +104,14 @@ Coordinate& CustomJoint::updCoordinate(unsigned idx) {
 void CustomJoint::extendScale(const SimTK::State& s, const ScaleSet& scaleSet) {
     Super::extendScale(s, scaleSet);
 
-    // Get the scale factors in the parent frame, if an entry for the parent
-    // Frame's base Body exists.
-    const SimTK::Vec3& s_P = getScaleFactors(scaleSet, getParentFrame());
-    if (s_P == ModelComponent::InvalidScaleFactors)
+    // Get scale factors (if an entry for the parent Frame's base Body exists).
+    const SimTK::Vec3& scaleFactors =
+            getScaleFactors(scaleSet, getParentFrame());
+    if (scaleFactors == ModelComponent::InvalidScaleFactors)
         return;
 
-    // Get the rotation of the mobilizer offset from F with respect to the
-    // parent frame P.
-    SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
-    const SimTK::Rotation& R_PF = X_PF.R();
-
-    // Stretch the axes of F (i.e., the columns of R_PF) by the parent body
-    // scale factors s_P. The magnitude of each stretched column is the scale
-    // factor along that axis of F.
-    SimTK::Vec3 s_F;
-    for (int i = 0; i < 3; ++i) {
-        s_F[i] = s_P.elementwiseMultiply(SimTK::Vec3(R_PF.col(i))).norm();
-    }
-
-    // Scale the spatial transform functions by the scale factors along each
-    // axis of F.
-    updSpatialTransform().scale(s_F);
+    //TODO: Need to scale transforms appropriately, given an arbitrary axis.
+    updSpatialTransform().scale(scaleFactors);
 }
 
 void CustomJoint::extendFinalizeFromProperties() {

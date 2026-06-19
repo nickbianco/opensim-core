@@ -228,9 +228,6 @@ public:
         return upd_coordinates( static_cast<unsigned>(idx) );
     }
 
-    // SCALE
-    void extendScale(const SimTK::State& s, const ScaleSet& scaleSet) override;
-
 protected:
     // MODEL COMPONENT INTERFACE
     void extendAddToSystem(SimTK::MultibodySystem& system) const override;

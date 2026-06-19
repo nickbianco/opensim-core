@@ -320,6 +320,22 @@ namespace SimTK {
 %template(StdVectorState) std::vector<SimTK::State>;
 %include <SWIGSimTK/SimbodyMatterSubsystem.h>
 
+%include <SWIGSimTK/MobilizedBody.h>
+
+// MobilizedBody's mobilizer subclasses are nested classes defined out-of-line
+// (e.g. `class MobilizedBody::Ellipsoid : public MobilizedBody`). SWIG cannot
+// parse that syntax, so flatten them into the SimTK namespace and rename to
+// avoid clashes with any other SimTK names.
+%feature("flatnested") SimTK::MobilizedBody::Ellipsoid;
+%feature("flatnested") SimTK::MobilizedBody::CantileverFreeBeam;
+%feature("flatnested") SimTK::MobilizedBody::FunctionBased;
+%rename(SimTKMobilizedBodyEllipsoid)          SimTK::MobilizedBody::Ellipsoid;
+%rename(SimTKMobilizedBodyCantileverFreeBeam) SimTK::MobilizedBody::CantileverFreeBeam;
+%rename(SimTKMobilizedBodyFunctionBased)      SimTK::MobilizedBody::FunctionBased;
+%include <SWIGSimTK/MobilizedBody_Ellipsoid.h>
+%include <SWIGSimTK/MobilizedBody_CantileverFreeBeam.h>
+%include <SWIGSimTK/MobilizedBody_FunctionBased.h>
+
 %rename(SimTKVisualizer) SimTK::Visualizer;
 %include <simbody/internal/Visualizer.h>
 

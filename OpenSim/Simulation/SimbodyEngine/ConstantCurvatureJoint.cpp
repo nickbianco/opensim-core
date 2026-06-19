@@ -896,24 +896,12 @@ void ConstantCurvatureJoint::extendScale(
         const SimTK::State& s, const ScaleSet& scaleSet) {
     Super::extendScale(s, scaleSet);
 
-    // Get the scale factors in the parent frame, if an entry for the parent
-    // Frame's base Body exists.
-    const SimTK::Vec3& s_P = getScaleFactors(scaleSet, getParentFrame());
-    if (s_P == ModelComponent::InvalidScaleFactors)
-        return;
+    // Get scale factors (if an entry for the parent Frame's base Body exists).
+    const Vec3& scaleFactors = getScaleFactors(scaleSet, getChildFrame());
+    if (scaleFactors == ModelComponent::InvalidScaleFactors) return;
 
-    // Get the rotation of the mobilizer offset from F with respect to the
-    // parent frame P.
-    SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
-    const SimTK::Rotation& R_PF = X_PF.R();
-
-    // Stretch the y-axis of F (i.e., the second column of R_PF) by the parent
-    // body scale factors s_P. The magnitude of the stretched column is the
-    // scale factor along the y-axis of F.
-    SimTK::Real s_Fy = s_P.elementwiseMultiply(SimTK::Vec3(R_PF.col(1))).norm();
-
-    // Update the length by the scale factor along the y-axis of F.
-    upd_length() = get_length() * s_Fy;
+    // TODO: Need to scale transforms appropriately, given an arbitrary axis.
+    upd_length() = get_length() * scaleFactors.get(1);
 }
 
 //=============================================================================
