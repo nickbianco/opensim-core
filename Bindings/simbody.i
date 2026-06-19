@@ -336,6 +336,40 @@ namespace SimTK {
 %include <SWIGSimTK/MobilizedBody_CantileverFreeBeam.h>
 %include <SWIGSimTK/MobilizedBody_FunctionBased.h>
 
+// Typed accessors for MobilizedBody::FunctionBased operations. The base
+// MobilizedBody handle returned by SimbodyMatterSubsystem::getMobilizedBody is
+// not auto-promoted to its derived FunctionBased type by SWIG, and no
+// downcast helper is exposed; these wrappers do the static_cast on the C++
+// side. The caller is responsible for ensuring the named mobilizer is
+// FunctionBased (CustomJoint and any other joint that backs a FunctionBased
+// mobilizer).
+namespace SimTK {
+%extend SimbodyMatterSubsystem {
+    void setMobilizerTranslationScale(SimTK::State& state, int mobodIndex,
+                                      const SimTK::Vec3& tScale) const {
+        const SimTK::MobilizedBody& mb =
+            $self->getMobilizedBody(SimTK::MobilizedBodyIndex(mobodIndex));
+        static_cast<const SimTK::MobilizedBody::FunctionBased&>(mb)
+            .setTranslationScale(state, tScale);
+    }
+    SimTK::Vec3 getMobilizerTranslationScale(const SimTK::State& state,
+                                             int mobodIndex) const {
+        const SimTK::MobilizedBody& mb =
+            $self->getMobilizedBody(SimTK::MobilizedBodyIndex(mobodIndex));
+        return static_cast<const SimTK::MobilizedBody::FunctionBased&>(mb)
+            .getTranslationScale(state);
+    }
+    SimTK::Vec3 multiplyByMobilizerPositionJacobianWrtTranslationScaleTranspose(
+            const SimTK::State& state, int mobodIndex,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+        const SimTK::MobilizedBody& mb =
+            $self->getMobilizedBody(SimTK::MobilizedBodyIndex(mobodIndex));
+        return static_cast<const SimTK::MobilizedBody::FunctionBased&>(mb)
+            .multiplyByPositionJacobianWrtTranslationScaleTranspose(state, dp_GB);
+    }
+}
+}
+
 %rename(SimTKVisualizer) SimTK::Visualizer;
 %include <simbody/internal/Visualizer.h>
 
