@@ -98,6 +98,44 @@ Coordinate& CustomJoint::updCoordinate(unsigned idx) {
     return upd_coordinates(idx);
 }
 
+void CustomJoint::setTranslationScale(
+        SimTK::State& state, const SimTK::Vec3& tScale) const {
+    // MobilizedBody::FunctionBased has no PIMPL of its own; downcast via its
+    // base MobilizedBody::Custom and then static_cast to the derived handle.
+    const auto& mobod = static_cast<const SimTK::MobilizedBody::FunctionBased&>(
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody()));
+    mobod.setTranslationScale(state, tScale);
+}
+
+SimTK::Vec3 CustomJoint::getTranslationScale(
+        const SimTK::State& state) const {
+    const auto& mobod = static_cast<const SimTK::MobilizedBody::FunctionBased&>(
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody()));
+    return mobod.getTranslationScale(state);
+}
+
+void CustomJoint::multiplyByPositionJacobianWrtTranslationScale(
+        const SimTK::State& state, const SimTK::Vec3& dTranslationScale,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& mobod = static_cast<const SimTK::MobilizedBody::FunctionBased&>(
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody()));
+    mobod.multiplyByPositionJacobianWrtTranslationScale(
+            state, dTranslationScale, dp_GB);
+}
+
+SimTK::Vec3 CustomJoint::multiplyByPositionJacobianWrtTranslationScaleTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& mobod = static_cast<const SimTK::MobilizedBody::FunctionBased&>(
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody()));
+    return mobod.multiplyByPositionJacobianWrtTranslationScaleTranspose(
+            state, dp_GB);
+}
+
 //=============================================================================
 // MODEL COMPONENT INTERFACE
 //=============================================================================

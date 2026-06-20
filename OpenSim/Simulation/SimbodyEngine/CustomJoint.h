@@ -129,6 +129,49 @@ public:
      */
     Coordinate& updCoordinate(unsigned idx);
 
+    /**
+     * Override the per-axis translation-output scale factors for this State.
+     * The scaled translation outputs are applied to the three translation
+     * functions of the underlying `SimTK::MobilizedBody::FunctionBased`. This
+     * is an Instance-stage variable: setting it invalidates Stage::Instance
+     * and higher, so the State must be re-realized to Position before any
+     * kinematic query reflects the new scale. The default is `Vec3(1, 1, 1)`,
+     * i.e., no scaling.
+     * @see getTranslationScale()
+     */
+    void setTranslationScale(SimTK::State& state,
+            const SimTK::Vec3& tScale) const;
+
+    /**
+     * Get the per-axis translation-output scale factors currently in effect
+     * for this State. Defaults to `Vec3(1, 1, 1)`. The State must have been
+     * realized to Stage::Instance or higher.
+     * @see setTranslationScale()
+     */
+    SimTK::Vec3 getTranslationScale(const SimTK::State& state) const;
+
+    /**
+     * Compute dp_GB = J_t(state) * dTranslationScale, the per-body shift in
+     * Ground due to a perturbation of this FunctionBased mobilizer's
+     * translation-output scale.
+     * @see SimTK::MobilizedBody::FunctionBased::
+     *          multiplyByPositionJacobianWrtTranslationScale()
+     */
+    void multiplyByPositionJacobianWrtTranslationScale(
+            const SimTK::State& state,
+            const SimTK::Vec3& dTranslationScale,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    /**
+     * Compute dTranslationScale = ~J_t(state) * dp_GB for this FunctionBased
+     * mobilizer.
+     * @see SimTK::MobilizedBody::FunctionBased::
+     *          multiplyByPositionJacobianWrtTranslationScaleTranspose()
+     */
+    SimTK::Vec3 multiplyByPositionJacobianWrtTranslationScaleTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
     // @}
 
     //** @name ModelComponent interface */

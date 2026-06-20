@@ -103,6 +103,37 @@ void EllipsoidJoint::setEllipsoidRadii(const Vec3& radii)
     set_radii_x_y_z(radii);
 }
 
+void EllipsoidJoint::setRadii(SimTK::State& state, const Vec3& radii) const
+{
+    const auto& mobod = MobilizedBody::Ellipsoid::downcast(
+            getChildFrame().getMobilizedBody());
+    mobod.setRadii(state, radii);
+}
+
+Vec3 EllipsoidJoint::getRadii(const SimTK::State& state) const
+{
+    const auto& mobod = MobilizedBody::Ellipsoid::downcast(
+            getChildFrame().getMobilizedBody());
+    return mobod.getRadii(state);
+}
+
+void EllipsoidJoint::multiplyByPositionJacobianWrtRadii(
+        const SimTK::State& state, const Vec3& dRadii,
+        Vector_<Vec3>& dp_GB) const
+{
+    const auto& mobod = MobilizedBody::Ellipsoid::downcast(
+            getChildFrame().getMobilizedBody());
+    mobod.multiplyByPositionJacobianWrtRadii(state, dRadii, dp_GB);
+}
+
+Vec3 EllipsoidJoint::multiplyByPositionJacobianWrtRadiiTranspose(
+        const SimTK::State& state, const Vector_<Vec3>& dp_GB) const
+{
+    const auto& mobod = MobilizedBody::Ellipsoid::downcast(
+            getChildFrame().getMobilizedBody());
+    return mobod.multiplyByPositionJacobianWrtRadiiTranspose(state, dp_GB);
+}
+
 //==============================================================================
 // SCALING
 //==============================================================================

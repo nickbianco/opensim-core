@@ -128,6 +128,35 @@ public:
         upd_Appearance().set_visible(visible);
     };
 
+    /** Override the ellipsoid semi-axis dimensions for this State. This is an
+        Instance-stage variable: setting it invalidates Stage::Instance and
+        higher, so the State must be re-realized to Position before any
+        kinematic query reflects the new radii. All three components must be
+        strictly positive. The 'radii_x_y_z' property is used as the initial
+        value when the State is created.
+        @see getRadii() */
+    void setRadii(SimTK::State& state, const SimTK::Vec3& radii) const;
+
+    /** Get the ellipsoid semi-axis dimensions currently in effect for this
+        State. The State must have been realized to Stage::Instance or higher.
+        @see setRadii() */
+    SimTK::Vec3 getRadii(const SimTK::State& state) const;
+
+    /** Compute dp_GB = J_r(state) * dRadii, the per-body shift in Ground due
+        to a perturbation of this Ellipsoid mobilizer's three semi-axis radii.
+        @see SimTK::MobilizedBody::Ellipsoid::
+                multiplyByPositionJacobianWrtRadii() */
+    void multiplyByPositionJacobianWrtRadii(const SimTK::State& state,
+            const SimTK::Vec3& dRadii,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    /** Compute dRadii = ~J_r(state) * dp_GB for this Ellipsoid mobilizer.
+        @see SimTK::MobilizedBody::Ellipsoid::
+                multiplyByPositionJacobianWrtRadiiTranspose() */
+    SimTK::Vec3 multiplyByPositionJacobianWrtRadiiTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
     /** Exposes getCoordinate() method defined in base class (overloaded below).
         @see Joint */
     using Joint::getCoordinate;
