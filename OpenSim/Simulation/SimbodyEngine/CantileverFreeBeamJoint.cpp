@@ -57,6 +57,40 @@ void CantileverFreeBeamJoint::constructProperties() {
 }
 
 //=============================================================================
+// ACCESSORS
+//=============================================================================
+void CantileverFreeBeamJoint::setBeamLength(
+        SimTK::State& state, const SimTK::Real& length) const {
+    const auto& mobod = SimTK::MobilizedBody::CantileverFreeBeam::downcast(
+            getChildFrame().getMobilizedBody());
+    mobod.setLength(state, length);
+}
+
+SimTK::Real CantileverFreeBeamJoint::getBeamLength(
+        const SimTK::State& state) const {
+    const auto& mobod = SimTK::MobilizedBody::CantileverFreeBeam::downcast(
+            getChildFrame().getMobilizedBody());
+    return mobod.getLength(state);
+}
+
+void CantileverFreeBeamJoint::multiplyByPositionJacobianWrtBeamLength(
+        const SimTK::State& state, SimTK::Real dLength,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& mobod = SimTK::MobilizedBody::CantileverFreeBeam::downcast(
+            getChildFrame().getMobilizedBody());
+    mobod.multiplyByPositionJacobianWrtLength(state, dLength, dp_GB);
+}
+
+SimTK::Real CantileverFreeBeamJoint::
+        multiplyByPositionJacobianWrtBeamLengthTranspose(
+                const SimTK::State& state,
+                const SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& mobod = SimTK::MobilizedBody::CantileverFreeBeam::downcast(
+            getChildFrame().getMobilizedBody());
+    return mobod.multiplyByPositionJacobianWrtLengthTranspose(state, dp_GB);
+}
+
+//=============================================================================
 // MODEL COMPONENT INTERFACE
 //=============================================================================
 void CantileverFreeBeamJoint::extendAddToSystem(

@@ -578,6 +578,64 @@ public:
 
     /**@}**/
 
+    /** @name Jacobians wrt inboard/outboard mobilizer frame positions
+    These operators compute the sensitivity of every body's origin in Ground
+    to a small perturbation of each mobilizer's inboard (X_PF) or outboard
+    (X_BM) frame translation. They are pass-throughs to the corresponding
+    methods on the internal SimbodyMatterSubsystem; see that class for the
+    full documentation. **/
+    /**@{**/
+
+    /** Compute dp_GB = J_pPF(state) * dp_PF, where J_pPF[i,k] =
+        d(p_GB[i])/d(p_PF[k]).
+        @see SimTK::SimbodyMatterSubsystem::
+                multiplyByPositionJacobianWrtInboardFramePositions() */
+    void multiplyByPositionJacobianWrtInboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_PF,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+        getMatterSubsystem().multiplyByPositionJacobianWrtInboardFramePositions(
+                state, dp_PF, dp_GB);
+    }
+
+    /** Compute dp_PF = ~J_pPF(state) * dp_GB.
+        @see SimTK::SimbodyMatterSubsystem::
+                multiplyByPositionJacobianWrtInboardFramePositionsTranspose() */
+    void multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_PF) const {
+        getMatterSubsystem()
+                .multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+                        state, dp_GB, dp_PF);
+    }
+
+    /** Compute dp_GB = J_pBM(state) * dp_BM, where J_pBM[i,k] =
+        d(p_GB[i])/d(p_BM[k]).
+        @see SimTK::SimbodyMatterSubsystem::
+                multiplyByPositionJacobianWrtOutboardFramePositions() */
+    void multiplyByPositionJacobianWrtOutboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_BM,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+        getMatterSubsystem().multiplyByPositionJacobianWrtOutboardFramePositions(
+                state, dp_BM, dp_GB);
+    }
+
+    /** Compute dp_BM = ~J_pBM(state) * dp_GB.
+        @see SimTK::SimbodyMatterSubsystem::
+                multiplyByPositionJacobianWrtOutboardFramePositionsTranspose() */
+    void multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_BM) const {
+        getMatterSubsystem()
+                .multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+                        state, dp_GB, dp_BM);
+    }
+
+    /**@}**/
+
     /** @name Adding components to the Model
      * Model takes ownership of the ModelComponent and adds it to a specialized
      * (typed) Set within the model. Model will maintain Components added using

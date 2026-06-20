@@ -228,6 +228,44 @@ public:
         return upd_coordinates( static_cast<unsigned>(idx) );
     }
 
+    /**
+     * Override the beam length for this State. This is an Instance-stage
+     * variable: setting it invalidates Stage::Instance and higher, so the
+     * State must be re-realized to Position before any kinematic query
+     * reflects the new length. The length must be strictly positive. The
+     * 'beam_length' property is used as the initial value when the State is
+     * created.
+     * @see getBeamLength()
+     */
+    void setBeamLength(SimTK::State& state, const SimTK::Real& length) const;
+
+    /**
+     * Get the beam length currently in effect for this State. The State must
+     * have been realized to Stage::Instance or higher.
+     * @see setBeamLength()
+     */
+    SimTK::Real getBeamLength(const SimTK::State& state) const;
+
+    /**
+     * Compute dp_GB = J_L(state) * dLength, the per-body shift in Ground due
+     * to a perturbation of this CantileverFreeBeam mobilizer's length.
+     * @see SimTK::MobilizedBody::CantileverFreeBeam::
+     *          multiplyByPositionJacobianWrtLength()
+     */
+    void multiplyByPositionJacobianWrtBeamLength(const SimTK::State& state,
+            SimTK::Real dLength,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    /**
+     * Compute dLength = ~J_L(state) * dp_GB for this CantileverFreeBeam
+     * mobilizer.
+     * @see SimTK::MobilizedBody::CantileverFreeBeam::
+     *          multiplyByPositionJacobianWrtLengthTranspose()
+     */
+    SimTK::Real multiplyByPositionJacobianWrtBeamLengthTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
 protected:
     // MODEL COMPONENT INTERFACE
     void extendAddToSystem(SimTK::MultibodySystem& system) const override;
