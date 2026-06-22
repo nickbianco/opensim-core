@@ -400,6 +400,30 @@ double Joint::calcPower(const SimTK::State &s) const
     return power;
 }
 
+void Joint::setMobilizedBodyInboardFrame(SimTK::State& state, 
+        const SimTK::Transform& transform) const {
+    getChildFrame().getMobilizedBody().setInboardFrame(state, transform);
+}
+
+void Joint::setMobilizedBodyOutboardFrame(SimTK::State& state, 
+        const SimTK::Transform& transform) const {
+    getChildFrame().getMobilizedBody().setOutboardFrame(state, transform);
+}
+
+void Joint::scaleMobilizedBodyInboardFramePosition(SimTK::State& state, 
+        const SimTK::Vec3& scales) const {
+    SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
+    X_PF.updP().elementwiseMultiply(scales);
+    getChildFrame().getMobilizedBody().setInboardFrame(state, X_PF);
+}
+
+void Joint::scaleMobilizedBodyOutboardFramePosition(SimTK::State& state, 
+        const SimTK::Vec3& scales) const {
+    SimTK::Transform X_BM = getChildFrame().findTransformInBaseFrame();
+    X_BM.updP().elementwiseMultiply(scales);
+    getChildFrame().getMobilizedBody().setInboardFrame(state, X_BM);
+}
+
 //=============================================================================
 // Helper
 //=============================================================================
