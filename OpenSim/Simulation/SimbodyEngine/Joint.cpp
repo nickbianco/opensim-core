@@ -413,15 +413,15 @@ void Joint::setMobilizedBodyOutboardFrame(SimTK::State& state,
 void Joint::scaleMobilizedBodyInboardFramePosition(SimTK::State& state, 
         const SimTK::Vec3& scales) const {
     SimTK::Transform X_PF = getParentFrame().findTransformInBaseFrame();
-    X_PF.updP().elementwiseMultiply(scales);
+    X_PF.updP() = X_PF.p().elementwiseMultiply(scales);
     getChildFrame().getMobilizedBody().setInboardFrame(state, X_PF);
 }
 
 void Joint::scaleMobilizedBodyOutboardFramePosition(SimTK::State& state, 
         const SimTK::Vec3& scales) const {
     SimTK::Transform X_BM = getChildFrame().findTransformInBaseFrame();
-    X_BM.updP().elementwiseMultiply(scales);
-    getChildFrame().getMobilizedBody().setInboardFrame(state, X_BM);
+    X_BM.updP() = X_BM.p().elementwiseMultiply(scales);
+    getChildFrame().getMobilizedBody().setOutboardFrame(state, X_BM);
 }
 
 //=============================================================================
