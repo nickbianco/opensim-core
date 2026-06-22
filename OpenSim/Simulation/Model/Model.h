@@ -634,6 +634,48 @@ public:
                         state, dp_GB, dp_BM);
     }
 
+    /** Compute dp_GB = J_pS(state) * ds_body, the sensitivity of every body's
+        origin in Ground to a perturbation of the body scales. A body's scale
+        is a SimTK::Vec3 that elementwise scales the translation of every
+        mobilizer frame attached to that body: the inboard frame (X_PF) of each
+        joint for which the body is the parent (the "next" joints), and the
+        outboard frame (X_BM) of the joint for which the body is the child (the
+        "previous" joint). Each frame translation is taken relative to the
+        body's base frame, so the elementwise scaling is a constant diagonal map
+        and this operator is the chain-rule composition of that map with the
+        inboard/outboard frame-position Jacobians.
+        @param[in]  state    Must be realized to Stage::Instance or higher.
+        @param[in]  ds_body  Per-body scale perturbation, indexed by
+                             SimTK::MobilizedBodyIndex; size must equal
+                             getMatterSubsystem().getNumBodies(). Entry 0
+                             corresponds to Ground.
+        @param[out] dp_GB    Resulting body-origin perturbations in Ground,
+                             indexed by MobilizedBodyIndex; resized as needed.
+                             Entry 0 (Ground) is always zero.
+        @see multiplyByPositionJacobianWrtInboardFramePositions()
+        @see multiplyByPositionJacobianWrtOutboardFramePositions() */
+    void multiplyByPositionJacobianWrtBodyScales(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& ds_body,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    /** Compute ds_body = ~J_pS(state) * dp_GB, the transpose of
+        multiplyByPositionJacobianWrtBodyScales().
+        @param[in]  state    Must be realized to Stage::Instance or higher.
+        @param[in]  dp_GB    Body-origin perturbation-like vector, indexed by
+                             SimTK::MobilizedBodyIndex; entry 0 (Ground) is
+                             ignored.
+        @param[out] ds_body  Resulting per-body scale projection, indexed by
+                             MobilizedBodyIndex; resized to
+                             getMatterSubsystem().getNumBodies() and zeroed
+                             before accumulation. Entry 0 (Ground) collects only
+                             the inboard frames of Ground-parented joints.
+        @see multiplyByPositionJacobianWrtBodyScales() */
+    void multiplyByPositionJacobianWrtBodyScalesTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& ds_body) const;
+
     /**@}**/
 
     /** @name Adding components to the Model

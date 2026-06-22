@@ -2269,6 +2269,82 @@ void Model::realizeReport(const SimTK::State& state) const {
 }
 
 //------------------------------------------------------------------------------
+// JACOBIANS WRT BODY SCALES
+//------------------------------------------------------------------------------
+void Model::multiplyByPositionJacobianWrtBodyScales(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& ds_body,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const SimTK::SimbodyMatterSubsystem& matter = getMatterSubsystem();
+    const int nb = matter.getNumBodies();
+
+    OPENSIM_THROW_IF_FRMOBJ(ds_body.size() != nb, Exception,
+            "Expected ds_body to have size " + std::to_string(nb) +
+            " (one Vec3 per mobilized body), but it had size " +
+            std::to_string(ds_body.size()) + ".");
+
+    // Scatter each body scale onto the inboard (X_PF) and outboard (X_BM)
+    // mobilizer-frame translation perturbations of the joints attached to that
+    // body. Each joint is realized as a single mobilizer whose
+    // MobilizedBodyIndex is that of its child body. The inboard frame is fixed
+    // on (and scaled by) the parent body; the outboard frame is fixed on (and
+    // scaled by) the child body. Frame translations are taken relative to the
+    // base body frame, matching Joint::scaleMobilizedBody*FramePosition().
+    SimTK::Vector_<SimTK::Vec3> dp_PF(nb, SimTK::Vec3(0));
+    SimTK::Vector_<SimTK::Vec3> dp_BM(nb, SimTK::Vec3(0));
+    for (const auto& joint : getComponentList<Joint>()) {
+        const int cx = joint.getChildFrame().getMobilizedBodyIndex();
+        const int px = joint.getParentFrame().getMobilizedBodyIndex();
+        const SimTK::Transform X_PF =
+                joint.getParentFrame().findTransformInBaseFrame();
+        const SimTK::Transform X_BM =
+                joint.getChildFrame().findTransformInBaseFrame();
+        dp_PF[cx] = X_PF.p().elementwiseMultiply(ds_body[px]);
+        dp_BM[cx] = X_BM.p().elementwiseMultiply(ds_body[cx]);
+    }
+
+    // dp_GB = J_pPF * dp_PF + J_pBM * dp_BM.
+    SimTK::Vector_<SimTK::Vec3> dp_GB_BM;
+    matter.multiplyByPositionJacobianWrtInboardFramePositions(
+            state, dp_PF, dp_GB);
+    matter.multiplyByPositionJacobianWrtOutboardFramePositions(
+            state, dp_BM, dp_GB_BM);
+    dp_GB += dp_GB_BM;
+}
+
+void Model::multiplyByPositionJacobianWrtBodyScalesTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+        SimTK::Vector_<SimTK::Vec3>& ds_body) const {
+    const SimTK::SimbodyMatterSubsystem& matter = getMatterSubsystem();
+    const int nb = matter.getNumBodies();
+
+    // Project body-origin sensitivities back onto the inboard (X_PF) and
+    // outboard (X_BM) mobilizer-frame translations.
+    SimTK::Vector_<SimTK::Vec3> dp_PF;
+    SimTK::Vector_<SimTK::Vec3> dp_BM;
+    matter.multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+            state, dp_GB, dp_PF);
+    matter.multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+            state, dp_GB, dp_BM);
+
+    // Gather the frame-translation projections onto the body scales. This is
+    // the exact transpose of the scatter performed in the forward operator.
+    ds_body.resize(nb);
+    ds_body.setToZero();
+    for (const auto& joint : getComponentList<Joint>()) {
+        const int cx = joint.getChildFrame().getMobilizedBodyIndex();
+        const int px = joint.getParentFrame().getMobilizedBodyIndex();
+        const SimTK::Transform X_PF =
+                joint.getParentFrame().findTransformInBaseFrame();
+        const SimTK::Transform X_BM =
+                joint.getChildFrame().findTransformInBaseFrame();
+        ds_body[px] += X_PF.p().elementwiseMultiply(dp_PF[cx]);
+        ds_body[cx] += X_BM.p().elementwiseMultiply(dp_BM[cx]);
+    }
+}
+
+//------------------------------------------------------------------------------
 // Subsystem computations
 //------------------------------------------------------------------------------
 void Model::computeStateVariableDerivatives(const SimTK::State &s) const
