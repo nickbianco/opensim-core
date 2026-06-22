@@ -282,6 +282,16 @@ public:
         constraint forces are available. */
     virtual double calcPower(const SimTK::State &s) const;
 
+    void setMobilizedBodyInboardFrame(SimTK::State&, 
+            const SimTK::Transform&) const;
+    void setMobilizedBodyOutboardFrame(SimTK::State&, 
+            const SimTK::Transform&) const;
+
+    void scaleMobilizedBodyInboardFramePosition(SimTK::State&, 
+            const SimTK::Vec3&) const;
+    void scaleMobilizedBodyOutboardFramePosition(SimTK::State&, 
+            const SimTK::Vec3&) const;
+
 #ifndef SWIG
     /// @class CoordinateIndex
     /// Unique integer type for local Coordinate indexing
