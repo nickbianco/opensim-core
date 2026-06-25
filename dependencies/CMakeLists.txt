@@ -185,7 +185,7 @@ AddDependency(NAME       ezc3d
 AddDependency(NAME       simbody
               DEFAULT    ON
               GIT_URL    https://github.com/nickbianco/simbody.git
-              GIT_TAG    scaled_system_jacobian_refactor
+              GIT_TAG    6cd18d8b8466b3e574377a6b5acd942af78c7a88
               CMAKE_ARGS -DBUILD_EXAMPLES:BOOL=OFF
                          -DBUILD_TESTING:BOOL=OFF
                          ${SIMBODY_EXTRA_CMAKE_ARGS})
