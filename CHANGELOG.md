@@ -67,6 +67,7 @@ performance and stability in wrapping solutions.
 - Implemented `extendPreScale` and `extendPostScale` for `Scholz2015GeometryPath`. Now, scaling a model using `Scholz2015GeometryPath` paths will update `Muscle` tendon slack lengths and optimal fiber lengths. (#4325)
 - Fix crash deserializing xml files that are missing OpenSimDocument tags. (#4336)
 - Added `exampleExponentialContactForce`, including C++, Matlab, and Python variants. (#4318)
+- Added the property `use_warm_start` and accessors `set/getWarmStart()` in `Scholz2015GeometryPath` to enable toggling on and off warm starts, where the wrapper solver from the previous time step as an initial guess for the path at the next time step. By default, `Scholz2015GeometryPath` now has warm starts disabled, meaning that paths are always computed from wrap obstacle contact hints (previously, warm starts were always enabled). (#4342)
 
 
 v4.5.2
