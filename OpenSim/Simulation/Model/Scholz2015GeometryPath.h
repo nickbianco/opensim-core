@@ -438,10 +438,6 @@ public:
      * recommended to disable this setting to avoid inconsistent path solutions.
      * If false, the path will always be computed from the curve contact hints
      * when realizing to SimTK::Stage::Position. Default: false.
-     *
-     * @note Calling this method will invalidate the underlying multibody
-     * system, if it exists. Call Model::realizeTopology() to re-realize the
-     * system and generate a fresh SimTK::State.
      */
     void setUseWarmStart(bool useWarmStart);
 
