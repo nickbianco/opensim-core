@@ -20,6 +20,8 @@ joints that lie between two frames based on a model's topology. (#4301)
 coordinate paths associated with a path element. Derived classes provide concrete implementations based on
 the model's topology (e.g., `GeometryPath`) or via a user-defined list of coordinates
 (e.g., `FunctionBasedPath`). (#4301)
+- `PolynomialPathFitter` now detects which coordinates should belong to a path based on the model topology by finding the joints that lie between the path's origin and insertion, and computes moment arms only for these coordinates.
+The property `moment_arm_threshold` has been removed, and the methods `get/setMomentArmThreshold()` have been deprecated. (#4352)
 
 
 v4.6
