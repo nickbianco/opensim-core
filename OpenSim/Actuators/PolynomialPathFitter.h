@@ -297,16 +297,13 @@ public:
     void setUseStepwiseRegression(bool tf);
     bool getUseStepwiseRegression() const;
 
-    /**
-     * The moment arm threshold value that determines whether or not a path
-     * depends on a model coordinate. In other words, the moment arm of a path
-     * with respect to a particular coordinate must be greater than this value
-     * to be included during path fitting.
-     *
-     * @note The default moment arm threshold is set to 1e-3 meters.
-     */
+    /// <b>(Deprecated)</b> Moment arms associated with a path are now
+    /// automatically detected based on the model's topology.
+    [[deprecated("Path moment arms are now detected based on model topology.")]]
     void setMomentArmThreshold(double threshold);
-    /// @copydoc setMomentArmThreshold()
+    /// <b>(Deprecated)</b> Moment arms associated with a path are now
+    /// automatically detected based on the model's topology.
+    [[deprecated("Path moment arms are now detected based on model topology.")]]
     double getMomentArmThreshold() const;
 
     /**
@@ -531,10 +528,9 @@ private:
             "Whether or not to use stepwise regression to fit a minimal set of "
             "polynomial coefficients.");
     OpenSim_DECLARE_PROPERTY(moment_arm_threshold, double,
-            "The moment arm threshold value that determines whether or not a "
-            "path depends on a model coordinate. In other words, the moment "
-            "arm of a path with respect to a coordinate must be greater than "
-            "this value to be included during path fitting.");
+            "(Deprecated) This property is no longer used. The coordinates "
+            "that each path depends on are now detected based on the model's "
+            "topology.");
     OpenSim_DECLARE_PROPERTY(minimum_polynomial_order, int,
             "The minimum order of the polynomial used to fit each path. The "
             "order of a polynomial is the highest power of the independent "
