@@ -317,7 +317,8 @@ TimeSeriesTable sampleCoordinateValues(
 // Helper function to compute path lengths and moment arms for the
 // geometry-based paths in the model. The path lengths and moment arms
 // are computed using the coordinate values in the `coordinateValues`
-// table.
+// table. The `numThreads` argument specifies the number of threads used
+// to parallelize the computations.
 void computePathLengthsAndMomentArms(
         const Model& model,
         const TimeSeriesTable& coordinateValues,
@@ -327,7 +328,7 @@ void computePathLengthsAndMomentArms(
         TimeSeriesTable& pathLengths,
         TimeSeriesTable& momentArms) {
 
-    // Precalculate some handy values for the path length and moment arm
+    // Precalculate some useful values for the path length and moment arm
     // computations.
     const int numTimes = static_cast<int>(coordinateValues.getNumRows());
     OPENSIM_THROW_IF(numTimes == 0, Exception,
@@ -340,9 +341,11 @@ void computePathLengthsAndMomentArms(
         numMomentArms += coordinatePaths.size();
     }
 
-    // Define the path calculation worker.
-    std::vector<SimTK::Matrix> pathResults(numPaths);
+    // Define the path calculation worker. The atomic integer 'nextPathIndex'
+    // controls the path from a thread should perform length and moment arm
+    //  calculations.
     std::atomic<int> nextPathIndex(0);
+    std::vector<SimTK::Matrix> pathResults(numPaths);
     auto pathCalculationWorker = [&](Model model, StatesTrajectory statesTraj) {
         model.initSystem();
 
@@ -1598,14 +1601,6 @@ void PolynomialPathFitter::evaluateFunctionBasedPaths(Model model,
     for (int i = 0; i < functionBasedPaths.getSize(); ++i) {
         const auto& path = functionBasedPaths.get(i);
         momentArmMap[path.getName()] = path.getCoordinatePaths();
-    }
-
-    // Forces not covered by the FunctionBasedPath set still have their path
-    // lengths computed, but receive no moment arm columns.
-    for (const auto& forcePath : forcePaths) {
-        if (momentArmMap.find(forcePath) == momentArmMap.end()) {
-            momentArmMap[forcePath] = {};
-        }
     }
 
     // Get the coordinate values table from the trajectory. This may contain
