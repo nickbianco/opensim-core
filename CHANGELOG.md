@@ -67,6 +67,9 @@ performance and stability in wrapping solutions.
 - Implemented `extendPreScale` and `extendPostScale` for `Scholz2015GeometryPath`. Now, scaling a model using `Scholz2015GeometryPath` paths will update `Muscle` tendon slack lengths and optimal fiber lengths. (#4325)
 - Fix crash deserializing xml files that are missing OpenSimDocument tags. (#4336)
 - Added `exampleExponentialContactForce`, including C++, Matlab, and Python variants. (#4318)
+- The Matlab and Python versions of the muscle-synergy example in `exampleMocoInverse` now use `CommonUtilities::factorizeMatrixNonNegative()` to perform muscle synergy analysis, now consistent with the C++ version of the example. (#4323)
+- Made simplifications to the joint moment tracking example in exampleMocoTrack to improve performance. (#4323)
+- Reference solution files are now included for `exampleMocoTrack` and `example3DWalking`. (#4323)
 
 
 v4.5.2
