@@ -358,9 +358,9 @@ void computePathLengthsAndMomentArms(
             const AbstractGeometryPath& path =
                     force.getPropertyByName<AbstractGeometryPath>("path")
                             .getValue();
-            std::vector<const Coordinate*> coordinates;
+            std::vector<SimTK::ReferencePtr<const Coordinate>> coordinates;
             for (const auto& coordinatePath : momentArmMap.at(forcePath)) {
-                coordinates.push_back(
+                coordinates.emplace_back(
                         &model.getComponent<Coordinate>(coordinatePath));
             }
             const int numCoordsThisPath = static_cast<int>(coordinates.size());
@@ -426,7 +426,7 @@ void computePathLengthsAndMomentArms(
     int offset = 0;
     for (const auto& path : forcePaths) {
         const SimTK::Matrix& results = pathResults[ipath];
-        const int numCoords = static_cast<int>(momentArmMap.at(path).size());
+        const int numCoords = results.ncol() - 1;
         lengthsMatrix.updCol(ipath) = results.col(0);
         momentArmsMatrix.updBlock(0, offset, numTimes,
                 numCoords) = results.block(0, 1, numTimes, numCoords);
@@ -1485,14 +1485,6 @@ bool PolynomialPathFitter::getUseStepwiseRegression() const {
     return get_use_stepwise_regression();
 }
 
-void PolynomialPathFitter::setMomentArmThreshold(double threshold) {
-    set_moment_arm_threshold(threshold);
-}
-
-double PolynomialPathFitter::getMomentArmThreshold() const {
-    return get_moment_arm_threshold();
-}
-
 void PolynomialPathFitter::setMinimumPolynomialOrder(int order) {
     set_minimum_polynomial_order(order);
 }
@@ -1650,7 +1642,6 @@ void PolynomialPathFitter::constructProperties() {
     constructProperty_coordinate_values(TableProcessor());
     constructProperty_output_directory("");
     constructProperty_use_stepwise_regression(false);
-    constructProperty_moment_arm_threshold(1e-3);
     constructProperty_moment_arm_tolerance(1e-4);
     constructProperty_path_length_tolerance(1e-4);
     constructProperty_minimum_polynomial_order(2);
