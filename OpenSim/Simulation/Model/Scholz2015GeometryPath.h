@@ -435,8 +435,8 @@ public:
             const Coordinate& coord) const override;
     bool isVisualPath() const override;
 
-    std::vector<std::string>
-    findIndependentCoordinatePaths(const SimTK::State&) const override;
+    std::vector<ComponentPath>
+    findIndependentCoordinates(const SimTK::State&) const override;
     // @}
 
     //** @name `ForceProducer` interface */

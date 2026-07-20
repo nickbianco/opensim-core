@@ -168,8 +168,8 @@ public:
      * representation. It is up to concrete implementations
      * (e.g., `GeometryPath`) to provide a relevant implementation.
      */
-    virtual std::vector<std::string>
-    findIndependentCoordinatePaths(const SimTK::State&) const = 0;
+    virtual std::vector<ComponentPath>
+    findIndependentCoordinates(const SimTK::State&) const = 0;
 
     // DEFAULTED METHODS
     //

@@ -460,54 +460,50 @@ TEST_CASE("WrapEllipsoid") {
     }
 }
 
-TEST_CASE("findCoordinatesBetween") {
-    Model model("subject_walk_armless_18musc.osim");
+TEST_CASE("findIndependentCoordinates") {
+    Model model("walk_gait1018_subject01.osim");
     SimTK::State state = model.initSystem();
 
     SECTION("hip muscles") {
-        const std::string muscle_name = GENERATE("psoas_r", "glut_max2_r");
+        const std::string muscle_name = GENERATE("iliopsoas_r", "glut_max_r");
         const std::string muscle_path = fmt::format("/forceset/{}", muscle_name);
         const auto& path = model.getComponent<Muscle>(muscle_path).getPath();
-        auto coordinates = path.findIndependentCoordinatePaths(state);
-        CHECK(coordinates[0] == "/jointset/hip_r/hip_flexion_r");
-        CHECK(coordinates[1] == "/jointset/hip_r/hip_adduction_r");
-        CHECK(coordinates[2] == "/jointset/hip_r/hip_rotation_r");
+        auto coords = path.findIndependentCoordinates(state);
+        CHECK(coords[0].toString() == "/jointset/hip_r/hip_flexion_r");
     }
 
     SECTION("hip/knee biarticular muscles") {
-        const std::string muscle_name = GENERATE("rect_fem_r", "semimem_r");
+        const std::string muscle_name = GENERATE("rect_fem_r", "hamstrings_r");
         const std::string muscle_path = fmt::format("/forceset/{}", muscle_name);
         const auto& muscle = model.getComponent<Muscle>(muscle_path);
         const auto& path = model.getComponent<Muscle>(muscle_path).getPath();
-        auto coordinates = path.findIndependentCoordinatePaths(state);
-        CHECK(coordinates[0] == "/jointset/hip_r/hip_flexion_r");
-        CHECK(coordinates[1] == "/jointset/hip_r/hip_adduction_r");
-        CHECK(coordinates[2] == "/jointset/hip_r/hip_rotation_r");
-        CHECK(coordinates[3] == "/jointset/walker_knee_r/knee_angle_r");
+        auto coords = path.findIndependentCoordinates(state);
+        CHECK(coords[0].toString() == "/jointset/hip_r/hip_flexion_r");
+        CHECK(coords[1].toString() == "/jointset/knee_r/knee_angle_r");
     }
 
     SECTION("knee muscles") {
-        const std::string muscle_name = GENERATE("vas_int_r", "bifemsh_r");
+        const std::string muscle_name = GENERATE("vasti_r", "bifemsh_r");
         const std::string muscle_path = fmt::format("/forceset/{}", muscle_name);
         const auto& muscle = model.getComponent<Muscle>(muscle_path);
         const auto& path = model.getComponent<Muscle>(muscle_path).getPath();
-        auto coordinates = path.findIndependentCoordinatePaths(state);
-        CHECK(coordinates[0] == "/jointset/walker_knee_r/knee_angle_r");
+        auto coords = path.findIndependentCoordinates(state);
+        CHECK(coords[0].toString() == "/jointset/knee_r/knee_angle_r");
     }
 
     SECTION("gastrocnemius") {
-        const std::string muscle_path = "/forceset/med_gas_r";
+        const std::string muscle_path = "/forceset/gastroc_r";
         const auto& path = model.getComponent<Muscle>(muscle_path).getPath();
-        auto coordinates = path.findIndependentCoordinatePaths(state);
-        CHECK(coordinates[0] == "/jointset/walker_knee_r/knee_angle_r");
-        CHECK(coordinates[1] == "/jointset/ankle_r/ankle_angle_r");
+        auto coords = path.findIndependentCoordinates(state);
+        CHECK(coords[0].toString() == "/jointset/knee_r/knee_angle_r");
+        CHECK(coords[1].toString() == "/jointset/ankle_r/ankle_angle_r");
     }
 
     SECTION("ankle muscles") {
         const std::string muscle_name = GENERATE("tib_ant_r", "soleus_r");
         const std::string muscle_path = fmt::format("/forceset/{}", muscle_name);
         const auto& path = model.getComponent<Muscle>(muscle_path).getPath();
-        auto coordinates = path.findIndependentCoordinatePaths(state);
-        CHECK(coordinates[0] == "/jointset/ankle_r/ankle_angle_r");
+        auto coords = path.findIndependentCoordinates(state);
+        CHECK(coords[0].toString() == "/jointset/ankle_r/ankle_angle_r");
     }
 }

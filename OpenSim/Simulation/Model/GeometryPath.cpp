@@ -469,8 +469,8 @@ bool GeometryPath::isVisualPath() const
     return true;
 }
 
-std::vector<std::string>
-GeometryPath::findIndependentCoordinatePaths(const SimTK::State& s) const {
+std::vector<ComponentPath>
+GeometryPath::findIndependentCoordinates(const SimTK::State& s) const {
     const PathPointSet& pps = get_PathPointSet();
     const PhysicalFrame& firstFrame = pps.get(0).getParentFrame();
     const PhysicalFrame& lastFrame = pps.get(pps.getSize() - 1).getParentFrame();
@@ -481,16 +481,17 @@ GeometryPath::findIndependentCoordinatePaths(const SimTK::State& s) const {
             firstFrame.getAbsolutePathString(),
             lastFrame.getAbsolutePathString());
 
-    std::vector<std::string> coordinatePaths;
+    std::vector<ComponentPath> coordinates;
     for (const auto& joint : jointsBetweenFrames) {
         for (int i = 0; i < joint->numCoordinates(); ++i) {
             const Coordinate& coord = joint->get_coordinates(i);
             if (!coord.isConstrained(s)) {
-                coordinatePaths.push_back(coord.getAbsolutePathString());
+                coordinates.push_back(
+                    ComponentPath(coord.getAbsolutePathString()));
             }
         }
     }
-    return coordinatePaths;
+    return coordinates;
 }
 
 //_____________________________________________________________________________

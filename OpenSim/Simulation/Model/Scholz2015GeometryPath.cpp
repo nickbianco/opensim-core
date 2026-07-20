@@ -217,9 +217,9 @@ bool Scholz2015GeometryPath::isVisualPath() const {
     return true;
 }
 
-std::vector<std::string>
+std::vector<ComponentPath>
 Scholz2015GeometryPath::
-findIndependentCoordinatePaths(const SimTK::State& s) const {
+findIndependentCoordinates(const SimTK::State& s) const {
     const PhysicalFrame& originFrame = getOrigin().getParentFrame();
     const PhysicalFrame& insertionFrame = getInsertion().getParentFrame();
 
@@ -229,16 +229,17 @@ findIndependentCoordinatePaths(const SimTK::State& s) const {
             originFrame.getAbsolutePathString(),
             insertionFrame.getAbsolutePathString());
 
-    std::vector<std::string> coordinatePaths;
+    std::vector<ComponentPath> coordinates;
     for (const auto& joint : jointsBetweenFrames) {
         for (int i = 0; i < joint->numCoordinates(); ++i) {
             const Coordinate& coord = joint->get_coordinates(i);
             if (!coord.isConstrained(s)) {
-                coordinatePaths.push_back(coord.getAbsolutePathString());
+                coordinates.push_back(
+                    ComponentPath(coord.getAbsolutePathString()));
             }
         }
     }
-    return coordinatePaths;
+    return coordinates;
 }
 
 //=============================================================================

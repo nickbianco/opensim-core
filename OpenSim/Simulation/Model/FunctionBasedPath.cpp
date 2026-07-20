@@ -166,11 +166,15 @@ bool FunctionBasedPath::isVisualPath() const
     return false;
 }
 
-std::vector<std::string>
+std::vector<ComponentPath>
 FunctionBasedPath::
-findIndependentCoordinatePaths(const SimTK::State& state) const
+findIndependentCoordinates(const SimTK::State& state) const
 {
-    return getCoordinatePaths();
+    std::vector<ComponentPath> coordinates;
+    for (const auto& path : getCoordinatePaths()) {
+        coordinates.push_back(ComponentPath(path));
+    }
+    return coordinates;
 }
 
 //=============================================================================
