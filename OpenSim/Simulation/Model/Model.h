@@ -956,6 +956,57 @@ public:
     int getNumProbeStates() const;
 
     //--------------------------------------------------------------------------
+    // JACOBIANS
+    //--------------------------------------------------------------------------
+    void multiplyByStationJacobian(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& stationPInB,
+            const SimTK::Vector&  u,
+            SimTK::Vector_<SimTK::Vec3>& JSu) const;
+
+    void multiplyByStationJacobianTranspose(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& stationPInB,
+            const SimTK::Vector_<SimTK::Vec3>& f_GP,
+            SimTK::Vector& f) const;
+
+    void multiplyByFrameJacobian(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& originAoInB,
+            const SimTK::Vector& u,
+            SimTK::Vector_<SimTK::SpatialVec>& JFu) const;
+
+    void multiplyByFrameJacobianTranspose(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& originAoInB,
+            const SimTK::Vector_<SimTK::SpatialVec>& F_GAo,
+            SimTK::Vector& f) const;
+
+    void multiplyByPositionJacobianWrtInboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_PF,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    void multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_PF) const;
+
+    void multiplyByPositionJacobianWrtOutboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_BM,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    void multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_BM) const;
+
+    //--------------------------------------------------------------------------
     // SETS
     //--------------------------------------------------------------------------
     //

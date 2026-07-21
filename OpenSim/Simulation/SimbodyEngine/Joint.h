@@ -282,6 +282,12 @@ public:
         constraint forces are available. */
     virtual double calcPower(const SimTK::State &s) const;
 
+    const SimTK::Transform& getInboardFrame(SimTK::State&) const;
+    const SimTK::Transform& getOutboardFrame(SimTK::State&) const;
+
+    void setInboardFrame(SimTK::State&, const SimTK::Transform&) const;
+    void setOutboardFrame(SimTK::State&, const SimTK::Transform&) const;
+
 #ifndef SWIG
     /// @class CoordinateIndex
     /// Unique integer type for local Coordinate indexing

@@ -142,6 +142,23 @@ public:
             int versionNumber=-1) override;
     // @}
 
+    //** @name Translation scale methods */
+    // @{
+    void setTranslationScale(SimTK::State& state,
+            const SimTK::Vec3& scale) const;
+
+    SimTK::Vec3 getTranslationScale(const SimTK::State& state) const;
+
+    void multiplyByPositionJacobianWrtTranslationScale(
+            const SimTK::State& state,
+            const SimTK::Vec3& dScale,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    SimTK::Vec3 multiplyByPositionJacobianWrtTranslationScaleTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+    // @}
+
 private:
     // MODEL COMPONENT INTERFACE
     void extendFinalizeFromProperties() override;
@@ -150,10 +167,11 @@ private:
 
     // CONVENIENCE METHODS
     void constructProperties();
-
     // Construct coordinates according to the SpatialTransform of the
     // CustomJoint.
     void constructCoordinates();
+    const SimTK::MobilizedBody::FunctionBased&
+    getMobilizedBodyFunctionBased() const;
 
     template <typename T>
     T createMobilizedBody(SimTK::MobilizedBody& inboard,

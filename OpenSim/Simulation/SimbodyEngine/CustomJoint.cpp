@@ -99,6 +99,45 @@ Coordinate& CustomJoint::updCoordinate(unsigned idx) {
 }
 
 //=============================================================================
+// TRANSLATION SCALE METHODS
+//=============================================================================
+void CustomJoint::setTranslationScale(
+        SimTK::State& state, const SimTK::Vec3& scale) const {
+    const auto& fb = getMobilizedBodyFunctionBased();
+    fb.setTranslationScale(state, scale);
+}
+
+SimTK::Vec3 CustomJoint::getTranslationScale(
+        const SimTK::State& state) const {
+    const auto& fb = getMobilizedBodyFunctionBased();
+    return fb.getTranslationScale(state);
+}
+
+void CustomJoint::multiplyByPositionJacobianWrtTranslationScale(
+        const SimTK::State& state, const SimTK::Vec3& dScale,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& fb = getMobilizedBodyFunctionBased();
+    const SimTK::SimbodyMatterSubsystem& matter =
+            getModel().getMatterSubsystem();
+    SimTK::Mat33 J = fb.calcPositionJacobianWrtTranslationScale(state);
+    matter.multiplyByPositionJacobianWrtMobilizerTranslation(
+            state, fb.getMobilizedBodyIndex(), J * dScale, dp_GB);
+}
+
+SimTK::Vec3 CustomJoint::multiplyByPositionJacobianWrtTranslationScaleTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    const auto& fb = getMobilizedBodyFunctionBased();
+    const SimTK::SimbodyMatterSubsystem& matter =
+            getModel().getMatterSubsystem();
+    SimTK::Mat33 J = fb.calcPositionJacobianWrtTranslationScale(state);
+    const SimTK::Vec3 sum =
+        matter.multiplyByPositionJacobianWrtMobilizerTranslationTranspose(
+            state, fb.getMobilizedBodyIndex(), dp_GB);
+    return ~J * sum;
+}
+
+//=============================================================================
 // MODEL COMPONENT INTERFACE
 //=============================================================================
 void CustomJoint::extendScale(const SimTK::State& s, const ScaleSet& scaleSet) {
@@ -441,4 +480,12 @@ void CustomJoint::constructCoordinates()
 
         }
     }
+}
+
+const SimTK::MobilizedBody::FunctionBased&
+CustomJoint::getMobilizedBodyFunctionBased() const {
+    const SimTK::MobilizedBody::Custom& custom =
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody());
+    return static_cast<const SimTK::MobilizedBody::FunctionBased&>(custom);
 }
