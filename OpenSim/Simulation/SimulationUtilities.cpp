@@ -564,7 +564,7 @@ OpenSim::findJointsBetweenPhysicalFrames(const Model& model,
             secondFramePath);
     const auto& firstFrame = model.getComponent<PhysicalFrame>(firstFramePath);
     const auto& secondFrame = model.getComponent<PhysicalFrame>(secondFramePath);
-        const std::string firstPath =
+    const std::string firstPath =
             firstFrame.findBaseFrame().getAbsolutePathString();
     const std::string secondPath =
             secondFrame.findBaseFrame().getAbsolutePathString();
@@ -581,7 +581,7 @@ OpenSim::findJointsBetweenPhysicalFrames(const Model& model,
     // populating a list of joints along the way and returning whether the
     // target frame was found. If the target frame is not found, the list of
     // joints will contain the path from the starting frame to the ground frame.
-    auto traceToGround = [&](const std::string& startBasePath,
+    auto traceTowardGround = [&](const std::string& startBasePath,
             const std::string& targetBasePath,
             std::vector<SimTK::ReferencePtr<const Joint>>& joints) -> bool {
         const Frame* current = &model.getComponent<PhysicalFrame>(startBasePath);
@@ -598,7 +598,7 @@ OpenSim::findJointsBetweenPhysicalFrames(const Model& model,
     };
 
     std::vector<SimTK::ReferencePtr<const Joint>> firstJoints;
-    bool firstFoundTarget = traceToGround(firstPath, secondPath, firstJoints);
+    bool firstFoundTarget = traceTowardGround(firstPath, secondPath, firstJoints);
     if (firstFoundTarget) {
         // Reverse the order of the joints so they are returned in root-to-leaf
         // order.
@@ -607,7 +607,7 @@ OpenSim::findJointsBetweenPhysicalFrames(const Model& model,
     }
 
     std::vector<SimTK::ReferencePtr<const Joint>> secondJoints;
-    bool secondFoundTarget = traceToGround(secondPath, firstPath, secondJoints);
+    bool secondFoundTarget = traceTowardGround(secondPath, firstPath, secondJoints);
     if (secondFoundTarget) {
         // Reverse the order of the joints so they are returned in root-to-leaf
         // order.
