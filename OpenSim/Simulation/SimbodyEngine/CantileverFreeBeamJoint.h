@@ -228,6 +228,12 @@ public:
         return upd_coordinates( static_cast<unsigned>(idx) );
     }
 
+    void setLength(SimTK::State& state, const SimTK::Real& length) const;
+    const SimTK::Real& getLength(const SimTK::State& state) const;
+
+    SimTK::Vec3 calcPositionJacobianWrtLength(
+            const SimTK::State& state) const;
+
 protected:
     // MODEL COMPONENT INTERFACE
     void extendAddToSystem(SimTK::MultibodySystem& system) const override;
@@ -239,6 +245,9 @@ protected:
 
 private:
     void constructProperties();
+
+    const SimTK::MobilizedBody::CantileverFreeBeam&
+    getMobilizedBodyCantileverFreeBeam() const;
 };
 
 } // namespace OpenSim

@@ -150,10 +150,11 @@ private:
 
     // CONVENIENCE METHODS
     void constructProperties();
-
     // Construct coordinates according to the SpatialTransform of the
     // CustomJoint.
     void constructCoordinates();
+    const SimTK::MobilizedBody::FunctionBased&
+    getMobilizedBodyFunctionBased() const;
 
     template <typename T>
     T createMobilizedBody(SimTK::MobilizedBody& inboard,
