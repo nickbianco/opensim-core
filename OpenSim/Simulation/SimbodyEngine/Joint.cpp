@@ -400,6 +400,24 @@ double Joint::calcPower(const SimTK::State &s) const
     return power;
 }
 
+const SimTK::Transform& Joint::getInboardFrame(SimTK::State& state) const {
+    return getChildFrame().getMobilizedBody().getInboardFrame(state);
+}
+
+const SimTK::Transform& Joint::getOutboardFrame(SimTK::State& state) const {
+    return getChildFrame().getMobilizedBody().getOutboardFrame(state);
+}
+
+void Joint::setInboardFrame(SimTK::State& state,
+        const SimTK::Transform& transform) const {
+    getChildFrame().getMobilizedBody().setInboardFrame(state, transform);
+}
+
+void Joint::setOutboardFrame(SimTK::State& state,
+        const SimTK::Transform& transform) const {
+    getChildFrame().getMobilizedBody().setOutboardFrame(state, transform);
+}
+
 //=============================================================================
 // Helper
 //=============================================================================

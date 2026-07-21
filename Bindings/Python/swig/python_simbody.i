@@ -268,6 +268,209 @@ namespace SimTK {
     }
 }
 
+// Bulk NumPy conversion for the small- and composite-element containers
+// ======================================================================
+// The grouped Simbody operators exchange data as containers of Vec3, SpatialVec
+// and Rotation rather than as scalars, and those have no bulk NumPy conversion.
+// Moving one across the binding therefore costs a Python-level loop with a SWIG
+// crossing per element, which dominates the cost of calling the operators: on a
+// full-body model, reading a 66-element Vector_<Vec3> element by element takes
+// ~43 us and filling one takes ~52 us, while the operator consuming it takes
+// ~1.4 us. Reading one rotation costs nine crossings.
+//
+// Each conversion below moves a whole container in a single crossing. They use
+// the flat (int n, double*) typemaps already applied above and reshape on the
+// Python side, which returns a view and so costs nothing.
+
+%extend Mat<3, 3, double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 9, "Size of input must be 9.");
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                numpyout[3 * i + j] = (*$self)(i, j);
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """Return this matrix as a (3, 3) NumPy array."""
+        return self._to_numpy(9).reshape(3, 3)
+%};
+}
+
+// Rotation_ derives from Mat<3,3>, but is extended explicitly so the conversion
+// does not depend on SWIG having resolved that base class.
+//
+// Element access goes through asMat33(): Rotation_ declares its own
+// single-argument operator()(int) returning a column, which hides the base
+// Mat::operator()(int, int).
+%extend Rotation_<double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 9, "Size of input must be 9.");
+        const Mat33& R = $self->asMat33();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                numpyout[3 * i + j] = R(i, j);
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """Return this rotation as a (3, 3) NumPy array."""
+        return self._to_numpy(9).reshape(3, 3)
+%};
+}
+
+%extend Transform_<double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 12, "Size of input must be 12.");
+        // asMat33() for the same reason as in the Rotation_ conversion above.
+        const Mat33& R = $self->R().asMat33();
+        const Vec3& p = $self->p();
+        for (int i = 0; i < 3; ++i) {
+            numpyout[4 * i]     = R(i, 0);
+            numpyout[4 * i + 1] = R(i, 1);
+            numpyout[4 * i + 2] = R(i, 2);
+            numpyout[4 * i + 3] = p[i];
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """
+        Return this transform as a (3, 4) NumPy array: the rotation in the first
+        three columns, the translation in the last. Reading both parts of a
+        transform this way costs one crossing instead of eleven.
+        """
+        return self._to_numpy(12).reshape(3, 4)
+%};
+}
+
+%extend VectorBase<Vec3> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 3 * $self->size(),
+                             "Size of input must be %i.", 3 * $self->size());
+        for (int i = 0; i < $self->size(); ++i) {
+            const Vec3& v = (*$self)[i];
+            numpyout[3 * i]     = v[0];
+            numpyout[3 * i + 1] = v[1];
+            numpyout[3 * i + 2] = v[2];
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """Return this vector as an (n, 3) NumPy array, one row per element."""
+        return self._to_numpy(3 * self.size()).reshape(self.size(), 3)
+%};
+}
+
+%extend Vector_<Vec3> {
+    static Vector_<Vec3> createFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n % 3 == 0, "VectorVec3.createFromMat()",
+                            "Size of input must be a multiple of 3.");
+        Vector_<Vec3> v(n / 3);
+        for (int i = 0; i < n / 3; ++i) {
+            v[i] = Vec3(numpydata[3 * i], numpydata[3 * i + 1],
+                        numpydata[3 * i + 2]);
+        }
+        return v;
+    }
+    // Overwrite in place, so a caller evaluating repeatedly can keep one vector
+    // and avoid reallocating on every call.
+    void updFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n == 3 * $self->size(), "VectorVec3.updFromMat()",
+                            "Size of input must be three times the size of the "
+                            "vector being updated.");
+        for (int i = 0; i < $self->size(); ++i) {
+            (*$self)[i] = Vec3(numpydata[3 * i], numpydata[3 * i + 1],
+                               numpydata[3 * i + 2]);
+        }
+    }
+}
+
+%extend Array_<Vec3> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 3 * (int)$self->size(),
+                             "Size of input must be %i.",
+                             3 * (int)$self->size());
+        for (int i = 0; i < (int)$self->size(); ++i) {
+            const Vec3& v = (*$self)[i];
+            numpyout[3 * i]     = v[0];
+            numpyout[3 * i + 1] = v[1];
+            numpyout[3 * i + 2] = v[2];
+        }
+    }
+    void updFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n == 3 * (int)$self->size(),
+                            "SimTKArrayVec3.updFromMat()",
+                            "Size of input must be three times the size of the "
+                            "array being updated.");
+        for (int i = 0; i < (int)$self->size(); ++i) {
+            (*$self)[i] = Vec3(numpydata[3 * i], numpydata[3 * i + 1],
+                               numpydata[3 * i + 2]);
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """Return this array as an (n, 3) NumPy array, one row per element."""
+        return self._to_numpy(3 * self.size()).reshape(self.size(), 3)
+%};
+}
+
+// Unlike the Vec3 containers, VectorBase<SpatialVec> is not instantiated in
+// simbody.i, so the conversion goes directly on Vector_<SpatialVec>. For the
+// same reason this type inherits no size() on the Python side, which to_numpy
+// needs, so that is exposed here too.
+%extend Vector_<SpatialVec> {
+    int size() const { return $self->size(); }
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 6 * $self->size(),
+                             "Size of input must be %i.", 6 * $self->size());
+        for (int i = 0; i < $self->size(); ++i) {
+            const SpatialVec& sv = (*$self)[i];
+            for (int half = 0; half < 2; ++half) {
+                for (int j = 0; j < 3; ++j) {
+                    numpyout[6 * i + 3 * half + j] = sv[half][j];
+                }
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        """
+        Return this vector as an (n, 6) NumPy array. Columns 0-2 hold each
+        element's first Vec3 (the angular or moment half) and columns 3-5 its
+        second (the linear or force half).
+        """
+        return self._to_numpy(6 * self.size()).reshape(self.size(), 6)
+%};
+    static Vector_<SpatialVec> createFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n % 6 == 0, "VectorOfSpatialVec.createFromMat()",
+                            "Size of input must be a multiple of 6.");
+        Vector_<SpatialVec> v(n / 6);
+        for (int i = 0; i < n / 6; ++i) {
+            v[i] = SpatialVec(
+                    Vec3(numpydata[6 * i], numpydata[6 * i + 1],
+                         numpydata[6 * i + 2]),
+                    Vec3(numpydata[6 * i + 3], numpydata[6 * i + 4],
+                         numpydata[6 * i + 5]));
+        }
+        return v;
+    }
+    void updFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n == 6 * $self->size(),
+                            "VectorOfSpatialVec.updFromMat()",
+                            "Size of input must be six times the size of the "
+                            "vector being updated.");
+        for (int i = 0; i < $self->size(); ++i) {
+            (*$self)[i] = SpatialVec(
+                    Vec3(numpydata[6 * i], numpydata[6 * i + 1],
+                         numpydata[6 * i + 2]),
+                    Vec3(numpydata[6 * i + 3], numpydata[6 * i + 4],
+                         numpydata[6 * i + 5]));
+        }
+    }
+}
+
 } // namespace SimTK
 
 

@@ -442,3 +442,11 @@ void CustomJoint::constructCoordinates()
         }
     }
 }
+
+const SimTK::MobilizedBody::FunctionBased&
+CustomJoint::getMobilizedBodyFunctionBased() const {
+    const SimTK::MobilizedBody::Custom& custom =
+            SimTK::MobilizedBody::Custom::downcast(
+                    getChildFrame().getMobilizedBody());
+    return static_cast<const SimTK::MobilizedBody::FunctionBased&>(custom);
+}

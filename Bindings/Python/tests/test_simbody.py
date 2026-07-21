@@ -106,6 +106,91 @@ class TestSimbody(unittest.TestCase):
         # Length.
         assert len(v2) == 3
 
+    def test_mat33_and_rotation_to_numpy(self):
+        rotation = osim.Rotation(0.3, osim.Vec3(0, 0, 1))
+        expected = np.array([[rotation.get(i, j) for j in range(3)]
+                             for i in range(3)])
+
+        # Rotation is extended directly, and also exposes its Mat33.
+        np.testing.assert_allclose(rotation.to_numpy(), expected, rtol=0, atol=0)
+        np.testing.assert_allclose(rotation.asMat33().to_numpy(), expected,
+                                   rtol=0, atol=0)
+
+    def test_transform_to_numpy(self):
+        rotation = osim.Rotation(0.4, osim.Vec3(1, 0, 0))
+        translation = osim.Vec3(1.0, -2.0, 3.5)
+        transform = osim.Transform(rotation, translation)
+
+        mat = transform.to_numpy()
+        assert mat.shape == (3, 4)
+        np.testing.assert_allclose(mat[:, :3], rotation.to_numpy(),
+                                   rtol=0, atol=0)
+        np.testing.assert_allclose(mat[:, 3], translation.to_numpy(),
+                                   rtol=0, atol=0)
+
+    def test_vector_vec3_typemaps(self):
+        npv = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        v1 = osim.VectorVec3.createFromMat(npv.flatten())
+        assert v1.size() == 2
+        np.testing.assert_allclose(v1.to_numpy(), npv, rtol=0, atol=0)
+
+        # Round trip through an element accessor, to confirm the packing order.
+        assert v1.get(1)[0] == 4.0
+        assert v1.get(1)[2] == 6.0
+
+        # updFromMat() overwrites in place.
+        v1.updFromMat(np.array([[7.0, 8.0, 9.0], [0.5, 0.25, 0.125]]).flatten())
+        np.testing.assert_allclose(
+            v1.to_numpy(), np.array([[7.0, 8.0, 9.0], [0.5, 0.25, 0.125]]),
+            rtol=0, atol=0)
+
+        # Empty.
+        v2 = osim.VectorVec3.createFromMat(np.array([]))
+        assert v2.size() == 0
+        assert v2.to_numpy().shape == (0, 3)
+
+        # Sizes that are not a multiple of three, or do not match.
+        with self.assertRaises(RuntimeError):
+            osim.VectorVec3.createFromMat(np.array([1.0, 2.0]))
+        with self.assertRaises(RuntimeError):
+            v1.updFromMat(np.array([1.0, 2.0, 3.0]))
+
+    def test_simtk_array_vec3_typemaps(self):
+        array = osim.SimTKArrayVec3()
+        array.push_back(osim.Vec3(1.0, 2.0, 3.0))
+        array.push_back(osim.Vec3(4.0, 5.0, 6.0))
+        expected = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        np.testing.assert_allclose(array.to_numpy(), expected, rtol=0, atol=0)
+
+        array.updFromMat(np.array([[9.0, 8.0, 7.0], [6.0, 5.0, 4.0]]).flatten())
+        np.testing.assert_allclose(
+            array.to_numpy(), np.array([[9.0, 8.0, 7.0], [6.0, 5.0, 4.0]]),
+            rtol=0, atol=0)
+        assert array.getElt(0)[0] == 9.0
+
+        with self.assertRaises(RuntimeError):
+            array.updFromMat(np.array([1.0, 2.0, 3.0]))
+
+    def test_vector_spatialvec_typemaps(self):
+        npv = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+                        [7.0, 8.0, 9.0, 10.0, 11.0, 12.0]])
+        v1 = osim.VectorOfSpatialVec.createFromMat(npv.flatten())
+        assert v1.size() == 2
+        np.testing.assert_allclose(v1.to_numpy(), npv, rtol=0, atol=0)
+
+        # Columns 0-2 are the first Vec3, columns 3-5 the second. SpatialVec is
+        # not subscriptable from Python, so its halves are read with get().
+        assert v1.get(0).get(0)[0] == 1.0
+        assert v1.get(0).get(1)[0] == 4.0
+        assert v1.get(1).get(1)[2] == 12.0
+
+        v1.updFromMat(np.zeros(12))
+        np.testing.assert_allclose(v1.to_numpy(), np.zeros((2, 6)),
+                                   rtol=0, atol=0)
+
+        with self.assertRaises(RuntimeError):
+            osim.VectorOfSpatialVec.createFromMat(np.array([1.0, 2.0]))
+
     def test_vector_typemaps(self):
         npv = np.array([5, 3, 6, 2, 9])
         v1 = osim.Vector.createFromMat(npv)
