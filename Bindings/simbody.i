@@ -257,6 +257,8 @@ namespace SimTK {
 %ignore Vec<2, Vec3>::Vec(const E&, const E&, const E&, const E&, const E&, const E&, const E&, const E&);
 %ignore Vec<2, Vec3>::Vec(const E&, const E&, const E&, const E&, const E&, const E&, const E&, const E&, const E&);
 %template(SpatialVec) Vec<2,   Vec3>;
+%template(MatrixBaseSpatialVec) MatrixBase<Vec<2, Vec3> >;
+%template(VectorBaseSpatialVec) VectorBase<Vec<2, Vec3> >;
 %template(VectorOfSpatialVec) Vector_<SpatialVec>;
 %template(MatrixOfSpatialVec) Matrix_<SpatialVec>;
 

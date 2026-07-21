@@ -123,6 +123,17 @@ public:
     //Set properties
     void setEllipsoidRadii(const SimTK::Vec3& radii);
 
+    void setRadii(SimTK::State& state, const SimTK::Vec3& radii) const;
+    const SimTK::Vec3& getRadii(const SimTK::State& state) const;
+
+    void multiplyByPositionJacobianWrtRadii(const SimTK::State& state,
+            const SimTK::Vec3& dradii,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    SimTK::Vec3 multiplyByPositionJacobianWrtRadiiTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& g_GB) const;
+
     /** Turn on/off the ellipsoid drawn by generateDecorations(). */
     void setEllipsoidVisible(bool visible) {
         upd_Appearance().set_visible(visible);
@@ -166,6 +177,8 @@ protected:
 
 private:
     void constructProperties();
+
+    const SimTK::MobilizedBody::Ellipsoid& getMobilizedBodyEllipsoid() const;
 
 //=============================================================================
 };  // END of class EllipsoidJoint
