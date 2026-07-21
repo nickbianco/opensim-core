@@ -956,6 +956,83 @@ public:
     int getNumProbeStates() const;
 
     //--------------------------------------------------------------------------
+    // COORDINATE INDEXING
+    //--------------------------------------------------------------------------
+    int getCoordinateQIndex(const SimTK::State& state,
+            const Coordinate& coordinate) const;
+
+    int getCoordinateNumQInUse(const SimTK::State& state,
+            const Coordinate& coordinate) const;
+
+    //--------------------------------------------------------------------------
+    // JACOBIANS
+    //--------------------------------------------------------------------------
+    void multiplyByStationJacobian(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& stationPInB,
+            const SimTK::Vector&  u,
+            SimTK::Vector_<SimTK::Vec3>& JSu) const;
+
+    void multiplyByStationJacobianTranspose(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& stationPInB,
+            const SimTK::Vector_<SimTK::Vec3>& f_GP,
+            SimTK::Vector& f) const;
+
+    void multiplyByFrameJacobian(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& originAoInB,
+            const SimTK::Vector& u,
+            SimTK::Vector_<SimTK::SpatialVec>& JFu) const;
+
+    void multiplyByFrameJacobianTranspose(
+            const SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+            const SimTK::Array_<SimTK::Vec3>& originAoInB,
+            const SimTK::Vector_<SimTK::SpatialVec>& F_GAo,
+            SimTK::Vector& f) const;
+
+    void multiplyByPositionJacobianWrtInboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_PF,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    void multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_PF) const;
+
+    void multiplyByPositionJacobianWrtOutboardFramePositions(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_BM,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    void multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+            SimTK::Vector_<SimTK::Vec3>& dp_BM) const;
+
+    void multiplyByN(const SimTK::State& state, bool transpose,
+            const SimTK::Vector& in, SimTK::Vector& out) const;
+
+    void multiplyByNInv(const SimTK::State& state, bool transpose,
+            const SimTK::Vector& in, SimTK::Vector& out) const;
+
+    void multiplyByPositionJacobianWrtMobilizerTranslation(
+            const SimTK::State& state,
+            SimTK::MobilizedBodyIndex mobodIndex,
+            const SimTK::Vec3& localShift,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    SimTK::Vec3 multiplyByPositionJacobianWrtMobilizerTranslationTranspose(
+            const SimTK::State& state,
+            SimTK::MobilizedBodyIndex mobodIndex,
+            const SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    //--------------------------------------------------------------------------
     // SETS
     //--------------------------------------------------------------------------
     //
