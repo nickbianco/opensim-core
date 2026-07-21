@@ -56,6 +56,37 @@ void CantileverFreeBeamJoint::constructProperties() {
     constructProperty_beam_length(1.0);
 }
 
+const SimTK::MobilizedBody::CantileverFreeBeam&
+CantileverFreeBeamJoint::getMobilizedBodyCantileverFreeBeam() const {
+    return SimTK::MobilizedBody::CantileverFreeBeam::downcast(
+            getChildFrame().getMobilizedBody());
+}
+
+void CantileverFreeBeamJoint::setLength(SimTK::State& state,
+        const SimTK::Real& length) const {
+    getMobilizedBodyCantileverFreeBeam().setLength(state, length);
+}
+
+const SimTK::Real& CantileverFreeBeamJoint::getLength(
+        const SimTK::State& state) const {
+    return getMobilizedBodyCantileverFreeBeam().getLength(state);
+}
+
+void CantileverFreeBeamJoint::multiplyByPositionJacobianWrtLength(
+        const SimTK::State& state, const SimTK::Real& dlength,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    getMobilizedBodyCantileverFreeBeam()
+            .multiplyByPositionJacobianWrtLength(state, dlength, dp_GB);
+}
+
+SimTK::Real
+CantileverFreeBeamJoint::multiplyByPositionJacobianWrtLengthTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& g_GB) const {
+    return getMobilizedBodyCantileverFreeBeam()
+            .multiplyByPositionJacobianWrtLengthTranspose(state, g_GB);
+}
+
 //=============================================================================
 // MODEL COMPONENT INTERFACE
 //=============================================================================

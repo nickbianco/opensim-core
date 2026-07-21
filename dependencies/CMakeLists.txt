@@ -192,8 +192,8 @@ AddDependency(NAME       ezc3d
 
 AddDependency(NAME       simbody
               DEFAULT    ON
-              GIT_URL    https://github.com/simbody/simbody.git
-              GIT_TAG    bc49cfde5f26a4f9a88bec83341d0db6ba769837
+              GIT_URL    https://github.com/nickbianco/simbody.git
+              GIT_TAG    osimfit/2026-11-19
               CMAKE_ARGS -DBUILD_EXAMPLES:BOOL=OFF
                          -DBUILD_TESTING:BOOL=OFF
                          ${SIMBODY_EXTRA_CMAKE_ARGS})

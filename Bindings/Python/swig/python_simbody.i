@@ -268,6 +268,149 @@ namespace SimTK {
     }
 }
 
+%extend Mat<3, 3, double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 9, "Size of input must be 9.");
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                numpyout[3 * i + j] = (*$self)(i, j);
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(9).reshape(3, 3)
+%};
+}
+
+%extend Rotation_<double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 9, "Size of input must be 9.");
+        const Mat33& R = $self->asMat33();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                numpyout[3 * i + j] = R(i, j);
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(9).reshape(3, 3)
+%};
+}
+
+%extend Transform_<double> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT_ALWAYS(n == 12, "Size of input must be 12.");
+        // asMat33() for the same reason as in the Rotation_ conversion above.
+        const Mat33& R = $self->R().asMat33();
+        const Vec3& p = $self->p();
+        for (int i = 0; i < 3; ++i) {
+            numpyout[4 * i]     = R(i, 0);
+            numpyout[4 * i + 1] = R(i, 1);
+            numpyout[4 * i + 2] = R(i, 2);
+            numpyout[4 * i + 3] = p[i];
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(12).reshape(3, 4)
+%};
+}
+
+%extend VectorBase<Vec3> {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 3 * $self->size(),
+                             "Size of input must be %i.", 3 * $self->size());
+        for (int i = 0; i < $self->size(); ++i) {
+            const Vec3& v = (*$self)[i];
+            numpyout[3 * i]     = v[0];
+            numpyout[3 * i + 1] = v[1];
+            numpyout[3 * i + 2] = v[2];
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(3 * self.size()).reshape(self.size(), 3)
+%};
+}
+
+%extend Vector_<Vec3> {
+    static Vector_<Vec3> createFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n % 3 == 0, "VectorVec3.createFromMat()",
+                            "Size of input must be a multiple of 3.");
+        Vector_<Vec3> v(n / 3);
+        for (int i = 0; i < n / 3; ++i) {
+            v[i] = Vec3(numpydata[3 * i], numpydata[3 * i + 1],
+                        numpydata[3 * i + 2]);
+        }
+        return v;
+    }
+}
+
+%extend Array_<Vec3> {
+    static Array_<Vec3> createFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n % 3 == 0, "SimTKArrayVec3.createFromMat()",
+                            "Size of input must be a multiple of 3.");
+        Array_<Vec3> a(n / 3);
+        for (int i = 0; i < n / 3; ++i) {
+            a[i] = Vec3(numpydata[3 * i], numpydata[3 * i + 1],
+                        numpydata[3 * i + 2]);
+        }
+        return a;
+    }
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 3 * (int)$self->size(),
+                             "Size of input must be %i.",
+                             3 * (int)$self->size());
+        for (int i = 0; i < (int)$self->size(); ++i) {
+            const Vec3& v = (*$self)[i];
+            numpyout[3 * i]     = v[0];
+            numpyout[3 * i + 1] = v[1];
+            numpyout[3 * i + 2] = v[2];
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(3 * self.size()).reshape(self.size(), 3)
+%};
+}
+
+%extend VectorBase<Vec<2, Vec3> > {
+    void _to_numpy(int n, double* numpyout) const {
+        SimTK_ASSERT1_ALWAYS(n == 6 * $self->size(),
+                             "Size of input must be %i.", 6 * $self->size());
+        for (int i = 0; i < $self->size(); ++i) {
+            const SpatialVec& sv = (*$self)[i];
+            for (int half = 0; half < 2; ++half) {
+                for (int j = 0; j < 3; ++j) {
+                    numpyout[6 * i + 3 * half + j] = sv[half][j];
+                }
+            }
+        }
+    }
+%pythoncode %{
+    def to_numpy(self):
+        return self._to_numpy(6 * self.size()).reshape(self.size(), 6)
+%};
+}
+
+%extend Vector_<SpatialVec> {
+    static Vector_<SpatialVec> createFromMat(int n, double* numpydata) {
+        SimTK_ERRCHK_ALWAYS(n % 6 == 0, "VectorOfSpatialVec.createFromMat()",
+                            "Size of input must be a multiple of 6.");
+        Vector_<SpatialVec> v(n / 6);
+        for (int i = 0; i < n / 6; ++i) {
+            v[i] = SpatialVec(
+                    Vec3(numpydata[6 * i], numpydata[6 * i + 1],
+                         numpydata[6 * i + 2]),
+                    Vec3(numpydata[6 * i + 3], numpydata[6 * i + 4],
+                         numpydata[6 * i + 5]));
+        }
+        return v;
+    }
+}
+
 } // namespace SimTK
 
 

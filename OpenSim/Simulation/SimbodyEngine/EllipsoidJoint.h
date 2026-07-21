@@ -321,6 +321,17 @@ public:
      */
     SimTK::CoordinateAxis getMirrorAxis() const;
 
+    void setRadii(SimTK::State& state, const SimTK::Vec3& radii) const;
+    const SimTK::Vec3& getRadii(const SimTK::State& state) const;
+
+    void multiplyByPositionJacobianWrtRadii(const SimTK::State& state,
+            const SimTK::Vec3& dradii,
+            SimTK::Vector_<SimTK::Vec3>& dp_GB) const;
+
+    SimTK::Vec3 multiplyByPositionJacobianWrtRadiiTranspose(
+            const SimTK::State& state,
+            const SimTK::Vector_<SimTK::Vec3>& g_GB) const;
+
     /**
      * Set whether the ellipsoid surface is drawn by generateDecorations().
      */
@@ -346,6 +357,7 @@ protected:
 private:
     void constructProperties();
     std::optional<SimTK::CoordinateAxis> findMirrorAxis() const;
+    const SimTK::MobilizedBody::Ellipsoid& getMobilizedBodyEllipsoid() const;
 };
 
 } // namespace OpenSim

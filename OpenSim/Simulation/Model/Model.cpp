@@ -2328,3 +2328,153 @@ SimTK::Vec3 Model::calcAngularMomentum(const SimTK::State& s) const {
 SimTK::Vec3 Model::calcLinearMomentum(const SimTK::State& s) const {
     return calcMomentum(s).get(1);
 }
+
+//------------------------------------------------------------------------------
+// JACOBIANS
+//------------------------------------------------------------------------------
+int Model::getCoordinateQIndex(const SimTK::State& state,
+        const Coordinate& coordinate) const {
+    const SimTK::MobilizedBody& mobod =
+            getMatterSubsystem().getMobilizedBody(coordinate.getBodyIndex());
+    return (int)mobod.getFirstQIndex(state) +
+           (int)coordinate.getMobilizerQIndex();
+}
+
+int Model::getCoordinateNumQInUse(const SimTK::State& state,
+        const Coordinate& coordinate) const {
+    const SimTK::MobilizedBody& mobod =
+            getMatterSubsystem().getMobilizedBody(coordinate.getBodyIndex());
+    return mobod.getNumQ(state);
+}
+
+void Model::multiplyByStationJacobian(
+        const SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+        const SimTK::Array_<SimTK::Vec3>& stationPInB,
+        const SimTK::Vector&  u,
+        SimTK::Vector_<SimTK::Vec3>& JSu) const {
+    getMatterSubsystem().multiplyByStationJacobian(
+            state, onBodyB, stationPInB, u, JSu);
+}
+
+void Model::multiplyByStationJacobianTranspose(
+        const SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+        const SimTK::Array_<SimTK::Vec3>& stationPInB,
+        const SimTK::Vector_<SimTK::Vec3>& f_GP,
+        SimTK::Vector& f) const {
+    getMatterSubsystem().multiplyByStationJacobianTranspose(
+            state, onBodyB, stationPInB, f_GP, f);
+}
+
+void Model::multiplyByFrameJacobian(
+        const SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+        const SimTK::Array_<SimTK::Vec3>& originAoInB,
+        const SimTK::Vector& u,
+        SimTK::Vector_<SimTK::SpatialVec>& JFu) const {
+    getMatterSubsystem().multiplyByFrameJacobian(
+            state, onBodyB, originAoInB, u, JFu);
+}
+
+void Model::multiplyByFrameJacobianTranspose(
+        const SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& onBodyB,
+        const SimTK::Array_<SimTK::Vec3>& originAoInB,
+        const SimTK::Vector_<SimTK::SpatialVec>& F_GAo,
+        SimTK::Vector& f) const {
+    getMatterSubsystem().multiplyByFrameJacobianTranspose(
+            state, onBodyB, originAoInB, F_GAo, f);
+}
+
+void Model::multiplyByPositionJacobianWrtInboardFramePositions(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_PF,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    getMatterSubsystem().multiplyByPositionJacobianWrtInboardFramePositions(
+            state, dp_PF, dp_GB);
+}
+
+void Model::multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+        SimTK::Vector_<SimTK::Vec3>& dp_PF) const {
+    getMatterSubsystem()
+            .multiplyByPositionJacobianWrtInboardFramePositionsTranspose(
+                    state, dp_GB, dp_PF);
+}
+
+void Model::multiplyByPositionJacobianWrtOutboardFramePositions(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_BM,
+        SimTK::Vector_<SimTK::Vec3>& dp_GB) const {
+    getMatterSubsystem().multiplyByPositionJacobianWrtOutboardFramePositions(
+            state, dp_BM, dp_GB);
+}
+
+void Model::setInboardFrames(
+        SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations) const {
+    OPENSIM_THROW_IF(rotations.size() != mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected one rotation per mobilized body.");
+    OPENSIM_THROW_IF(translations.size() != 3 * (int)mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected three translation entries per mobilized body.");
+
+    const int numBodies = (int)mobodIndexes.size();
+    const SimTK::SimbodyMatterSubsystem& matter = getMatterSubsystem();
+    for (int i = 0; i < numBodies; ++i) {
+        const SimTK::Transform X(rotations[i],
+                SimTK::Vec3(translations[3 * i], translations[3 * i + 1],
+                            translations[3 * i + 2]));
+        const SimTK::MobilizedBody& mobod =
+            matter.getMobilizedBody(mobodIndexes[i]);
+        mobod.setInboardFrame(state, X);
+    }
+}
+
+void Model::setOutboardFrames(
+        SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations) const {
+    OPENSIM_THROW_IF(rotations.size() != mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected one rotation per mobilized body.");
+    OPENSIM_THROW_IF(translations.size() != 3 * (int)mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected three translation entries per mobilized body.");
+
+    const int numBodies = (int)mobodIndexes.size();
+    const SimTK::SimbodyMatterSubsystem& matter = getMatterSubsystem();
+    for (int i = 0; i < numBodies; ++i) {
+        const SimTK::Transform X(rotations[i],
+                SimTK::Vec3(translations[3 * i], translations[3 * i + 1],
+                            translations[3 * i + 2]));
+        const SimTK::MobilizedBody& mobod =
+            matter.getMobilizedBody(mobodIndexes[i]);
+        mobod.setOutboardFrame(state, X);
+    }
+}
+
+void Model::multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+        const SimTK::State& state,
+        const SimTK::Vector_<SimTK::Vec3>& dp_GB,
+        SimTK::Vector_<SimTK::Vec3>& dp_BM) const {
+    getMatterSubsystem()
+            .multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
+                    state, dp_GB, dp_BM);
+}
+
+void Model::multiplyByN(const SimTK::State& state, bool transpose,
+        const SimTK::Vector& in, SimTK::Vector& out) const {
+    getMatterSubsystem().multiplyByN(state, transpose, in, out);
+}
+
+void Model::multiplyByNInv(const SimTK::State& state, bool transpose,
+        const SimTK::Vector& in, SimTK::Vector& out) const {
+    getMatterSubsystem().multiplyByNInv(state, transpose, in, out);
+}
