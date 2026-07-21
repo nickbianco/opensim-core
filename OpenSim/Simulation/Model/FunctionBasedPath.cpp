@@ -167,12 +167,12 @@ bool FunctionBasedPath::isVisualPath() const
 }
 
 std::vector<ComponentPath>
-FunctionBasedPath::
-findIndependentCoordinates(const SimTK::State& state) const
+FunctionBasedPath::findIndependentCoordinates(const SimTK::State&) const
 {
     std::vector<ComponentPath> coordinates;
-    for (const auto& path : getCoordinatePaths()) {
-        coordinates.push_back(ComponentPath(path));
+    coordinates.reserve(getProperty_coordinate_paths().size());
+    for (int i = 0; i < getProperty_coordinate_paths().size(); ++i) {
+        coordinates.push_back(ComponentPath(get_coordinate_paths(i)));
     }
     return coordinates;
 }

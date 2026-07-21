@@ -453,8 +453,8 @@ OSIMSIMULATION_API void appendCoordinateValueDerivativesAsSpeeds(
 /// the list of joints will use a root-to-leaf ordering.
 ///
 /// @note This function uses several passes through the model's topology to form
-/// the list of joints, so avoid repeated calls to this function in performance
-/// critical applications.
+/// the list of joints, so avoid repeated calls in performance critical
+/// applications.
 ///
 /// @ingroup simulationutil
 OSIMSIMULATION_API
