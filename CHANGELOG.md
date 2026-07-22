@@ -14,6 +14,12 @@ v4.6.1
 - Added `CoordinateLinearStopForce`, a force element for enforcing coordinate limits using a
 linear spring force and Hunt and Crossley-like damping. (#4329)
 - Updated `ExponentialCoordinateLimitForce` to use `Socket` to define the connection to a particular `Coordinate`. (#4329)
+- Added `SimulationUtilities::findJointsBetweenPhysicalFrames`, a utility function for finding the set of
+joints that lie between two frames based on a model's topology. (#4301)
+- Added `AbstractGeometryPath::findIndependentCoordinates()`, a utility method for finding the list of
+coordinate paths associated with a path element. Derived classes provide concrete implementations based on
+the model's topology (e.g., `GeometryPath`) or via a user-defined list of coordinates
+(e.g., `FunctionBasedPath`). (#4301)
 
 
 v4.6
