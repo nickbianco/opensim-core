@@ -42,7 +42,9 @@ CMakeLists.txt.user
 *~
 *.swp
 *.swo
-.cache/  # When using clangd-based LSPs
+
+# When using clangd-based LSPs
+.cache/
 
 # editor: Visual Studio
 .vs/
