@@ -6,8 +6,8 @@ find_package(Catch2 REQUIRED
 # Create an executable for the file ${TEST_NAME}.cpp, which depends on
 # libraries ${LIB_DEPENDENCIES}. Also create a CTest test for this executable.
 function(MocoAddTest)
-    set(options REQUIRES_CASADI)
-    set(oneValueArgs NAME)
+    set(options)
+    set(oneValueArgs NAME REQUIRES_CASADI)
     set(multiValueArgs LIB_DEPENDS RESOURCES)
     cmake_parse_arguments(MOCOTEST
             "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -15,11 +15,6 @@ function(MocoAddTest)
     # To organize targets in Visual Studio's Solution Explorer.
     set_target_properties(${MOCOTEST_NAME} PROPERTIES FOLDER "Moco/Tests")
     target_link_libraries(${MOCOTEST_NAME} osimMoco ${MOCOTEST_LIB_DEPENDS} Catch2::Catch2WithMain)
-    # Skip tests relying on MocoCasADiSolver if CasADi is not available.
-    if(NOT OPENSIM_WITH_CASADI)
-        list(APPEND test_args "~*MocoCasADiSolver*")
-        list(APPEND test_args "~[casadi]")
-    endif()
     if(APPLE)
         list(APPEND test_args "~[win]~[linux]~[win/linux]~[linux/win]")
     endif()
@@ -30,6 +25,10 @@ function(MocoAddTest)
         list(APPEND test_args "~[mac]~[linux]~[mac/linux]~[linux/mac]~[unix]")
     endif()
     add_test(NAME ${MOCOTEST_NAME} COMMAND ${MOCOTEST_NAME} ${test_args})
+    # Default to requiring CasADi unless the caller explicitly passes REQUIRES_CASADI FALSE.
+    if(NOT DEFINED MOCOTEST_REQUIRES_CASADI)
+        set(MOCOTEST_REQUIRES_CASADI TRUE)
+    endif()
     if(MOCOTEST_REQUIRES_CASADI AND NOT OPENSIM_WITH_CASADI)
         set_tests_properties(${MOCOTEST_NAME} PROPERTIES DISABLED TRUE)
     endif()
@@ -40,21 +39,21 @@ function(MocoAddTest)
     file(COPY ${MOCOTEST_RESOURCES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 endfunction()
 
-MocoAddTest(NAME testMocoInterface REQUIRES_CASADI)
+MocoAddTest(NAME testMocoInterface)
 
 MocoAddTest(NAME testMocoGoals)
 
 MocoAddTest(NAME testMocoParameters)
 
-MocoAddTest(NAME testMocoImplicit REQUIRES_CASADI)
+MocoAddTest(NAME testMocoImplicit)
 
-MocoAddTest(NAME testMocoConstraints REQUIRES_CASADI)
+MocoAddTest(NAME testMocoConstraints)
 
 MocoAddTest(NAME testMocoContact RESOURCES
         subject_20dof18musc_running.osim
         running_solution_full_stride.sto)
 
-MocoAddTest(NAME testMocoControllers REQUIRES_CASADI)
+MocoAddTest(NAME testMocoControllers)
 
 MocoAddTest(NAME testMocoActuators)
 
@@ -74,9 +73,9 @@ MocoAddTest(NAME testMocoTrack RESOURCES
         std_testMocoTrackGait10dof18musc_solution.sto
         )
 
-MocoAddTest(NAME testMocoAnalytic REQUIRES_CASADI)
+MocoAddTest(NAME testMocoAnalytic)
 
-MocoAddTest(NAME testMocoMetabolics RESOURCES
+MocoAddTest(NAME testMocoMetabolics REQUIRES_CASADI FALSE RESOURCES
         testMocoMetabolics_hanging_muscle.osim
         )
 
