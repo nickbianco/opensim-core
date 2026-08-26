@@ -1,0 +1,85 @@
+CasADi 3.6.5 does not compile with WITH_DL=OFF; the option is not exercised
+upstream. OpenSim needs it when linking CasADi statically into osimMoco
+(OPENSIM_CASADI_STATIC), so that CasADi cannot dlopen a plugin belonging to a
+different CasADi that happens to be present in the process -- for example the
+one inside the `casadi` PyPI package.
+
+Two fixes, both mechanical:
+
+  1. plugin_interface.hpp declares and defines PluginInterface::load_library()
+     with a handle_t return type, but handle_t only exists when WITH_DL is
+     defined (casadi_os.hpp). Nothing outside this header calls load_library(),
+     so the declaration and definition can simply be guarded.
+
+  2. casadi_os.hpp defines SHARED_LIBRARY_PREFIX/SUFFIX inside its WITH_DL
+     block, but tools.cpp (external_transform) uses SHARED_LIBRARY_SUFFIX
+     unconditionally. The macros are plain strings, so they can move out of the
+     guard.
+
+Worth sending upstream; if a future CasADi fixes this, drop the patch and the
+PATCH_COMMAND in CMakeLists.txt.
+
+--- a/casadi/core/plugin_interface.hpp
++++ b/casadi/core/plugin_interface.hpp
+@@ -86,9 +86,11 @@
+     /// Load a plugin dynamically
+     static Plugin load_plugin(const std::string& pname, bool register_plugin=true);
+ 
++#ifdef WITH_DL
+     /// Load a library dynamically
+     static handle_t load_library(const std::string& libname, std::string& resultpath,
+       bool global);
++#endif // WITH_DL
+ 
+     /// Register an integrator in the factory
+     static void registerPlugin(const Plugin& plugin);
+@@ -173,13 +175,10 @@
+   }
+ 
+ 
++#ifdef WITH_DL
+   template<class Derived>
+   handle_t PluginInterface<Derived>::load_library(const std::string& libname,
+     std::string& resultpath, bool global) {
+-
+-#ifndef WITH_DL
+-    casadi_error("WITH_DL option needed for dynamic loading");
+-#else // WITH_DL
+ 
+     // Get the name of the shared library
+     std::string lib = SHARED_LIBRARY_PREFIX + libname + SHARED_LIBRARY_SUFFIX;
+@@ -188,9 +187,8 @@
+     std::vector<std::string> search_paths = get_search_paths();
+     return open_shared_library(lib, search_paths, resultpath,
+       "PluginInterface::load_plugin", global);
+-
+-#endif // WITH_DL
+   }
++#endif // WITH_DL
+ 
+   template<class Derived>
+   typename PluginInterface<Derived>::Plugin
+--- a/casadi/core/casadi_os.hpp
++++ b/casadi/core/casadi_os.hpp
+@@ -54,17 +54,18 @@
+ #include <dlfcn.h>
+ #endif // _WIN32
+ 
+-// Set default shared library prefix
++#endif // WITH_DL
++
++// Set default shared library prefix (independent of WITH_DL)
+ #ifndef SHARED_LIBRARY_PREFIX
+ #define SHARED_LIBRARY_PREFIX CASADI_SHARED_LIBRARY_PREFIX
+ #endif // SHARED_LIBRARY_PREFIX
+ 
+ 
+-// Set default shared library suffix
++// Set default shared library suffix (independent of WITH_DL)
+ #ifndef SHARED_LIBRARY_SUFFIX
+ #define SHARED_LIBRARY_SUFFIX CASADI_SHARED_LIBRARY_SUFFIX
+ #endif // SHARED_LIBRARY_SUFFIX
+-#endif // WITH_DL
+ 
+ namespace casadi {
+ 

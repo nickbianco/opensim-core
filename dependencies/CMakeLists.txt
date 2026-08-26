@@ -75,10 +75,12 @@ endfunction()
 #   DEPENDS    -- (Optional) Other projects this project depends on.
 #   CMAKE_ARGS -- (Optional) A CMake list of arguments to be passed to CMake
 #                 while building the project.
+#   PATCH_COMMAND -- (Optional) Command to run in the source tree after
+#                 downloading, e.g. to apply a patch (see ApplyPatch.cmake).
 # You must provide either URL or GIT_URL and GIT_TAG, but not all 3.
 function(AddDependency)
     set(onevalueargs NAME DEFAULT URL GIT_URL GIT_TAG)
-    set(multiValueArgs DEPENDS CMAKE_ARGS)
+    set(multiValueArgs DEPENDS CMAKE_ARGS PATCH_COMMAND)
     cmake_parse_arguments(DEP "" "${onevalueargs}" "${multiValueArgs}" ${ARGN})
 
     # Check for presence of required arguments.
@@ -150,6 +152,13 @@ function(AddDependency)
         # Append the dependency-specific CMake arguments.
         list(APPEND CMAKE_ARGS ${DEP_CMAKE_ARGS})
 
+        # Only pass PATCH_COMMAND along if one was requested; ExternalProject
+        # has no patch step otherwise.
+        set(PATCH_ARG)
+        if(DEP_PATCH_COMMAND)
+            set(PATCH_ARG PATCH_COMMAND ${DEP_PATCH_COMMAND})
+        endif()
+
         if(DEP_GIT_URL)
             ExternalProject_Add(${DEP_NAME}
                 DEPENDS          ${DEP_DEPENDS}
@@ -158,6 +167,7 @@ function(AddDependency)
                 GIT_REPOSITORY   ${DEP_GIT_URL}
                 GIT_TAG          ${DEP_GIT_TAG}
                 SOURCE_DIR       ${SOURCE_DIR}
+                ${PATCH_ARG}
                 CMAKE_CACHE_ARGS ${CMAKE_ARGS}
                 BINARY_DIR       ${BINARY_DIR}/build
                 INSTALL_DIR      ${INSTALL_DIR})
@@ -168,6 +178,7 @@ function(AddDependency)
                 STAMP_DIR        ${BINARY_DIR}/stamp
                 URL              ${DEP_URL}
                 SOURCE_DIR       ${SOURCE_DIR}
+                ${PATCH_ARG}
                 CMAKE_CACHE_ARGS ${CMAKE_ARGS}
                 BINARY_DIR       ${BINARY_DIR}/build
                 INSTALL_DIR      ${INSTALL_DIR})
@@ -215,6 +226,15 @@ if(OPENSIM_WITH_CASADI)
     CMAKE_DEPENDENT_OPTION(SUPERBUILD_casadi "Automatically download, configure, build and install casadi" ON
                            "OPENSIM_WITH_CASADI" OFF)
     mark_as_advanced(SUPERBUILD_casadi)
+
+    # Must match OPENSIM_CASADI_STATIC in opensim-core: that build links these
+    # archives into osimMoco with their symbols hidden, so that a different
+    # CasADi in the same process (the `casadi` PyPI package, for instance)
+    # cannot bind to them.
+    CMAKE_DEPENDENT_OPTION(OPENSIM_CASADI_STATIC
+                           "Build CasADi as static libraries, for linking into osimMoco with hidden symbols." OFF
+                           "OPENSIM_WITH_CASADI" OFF)
+    mark_as_advanced(OPENSIM_CASADI_STATIC)
 endif()
 
 if (WIN32)
@@ -283,6 +303,24 @@ else()
 endif()
 
 if(SUPERBUILD_casadi)
+  set(CASADI_STATIC_ARGS)
+  set(CASADI_PATCH_COMMAND)
+  if(OPENSIM_CASADI_STATIC)
+      # WITH_DL=OFF removes CasADi's dlopen-based plugin loading, which a static
+      # build cannot use anyway: there are no plugin shared libraries to find,
+      # and searching for them could turn up a plugin belonging to a different
+      # CasADi. osimMoco registers the Ipopt plugin itself instead.
+      set(CASADI_STATIC_ARGS -DENABLE_STATIC:BOOL=ON
+                             -DENABLE_SHARED:BOOL=OFF
+                             -DWITH_DL:BOOL=OFF
+                             -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON)
+      # CasADi 3.6.5 does not compile with WITH_DL=OFF; see the patch header.
+      set(CASADI_PATCH_COMMAND
+              ${CMAKE_COMMAND}
+              -DPATCH_FILE=${CMAKE_CURRENT_SOURCE_DIR}/casadi_with_dl_off.patch
+              -DSOURCE_DIR=<SOURCE_DIR>
+              -P ${CMAKE_CURRENT_SOURCE_DIR}/ApplyPatch.cmake)
+  endif()
   if (WIN32)
       AddDependency(NAME       casadi
                     DEFAULT    ON
@@ -299,6 +337,8 @@ if(SUPERBUILD_casadi)
                                -DWITH_EXAMPLES:BOOL=OFF
                                -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH:BOOL=ON
                                -DCMAKE_PREFIX_PATH:PATH=${CMAKE_INSTALL_PREFIX}/ipopt
+                               ${CASADI_STATIC_ARGS}
+                    PATCH_COMMAND ${CASADI_PATCH_COMMAND}
                   )
   else()
     AddDependency(NAME       casadi
@@ -312,6 +352,8 @@ if(SUPERBUILD_casadi)
                              -DWITH_EXAMPLES:BOOL=OFF
                              -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH:BOOL=ON
                              -DCMAKE_PREFIX_PATH:PATH=${CMAKE_INSTALL_PREFIX}/ipopt
+                             ${CASADI_STATIC_ARGS}
+                  PATCH_COMMAND ${CASADI_PATCH_COMMAND}
                   )
   endif()
 endif()

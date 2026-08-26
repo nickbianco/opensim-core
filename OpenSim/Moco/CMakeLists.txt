@@ -143,7 +143,64 @@ OpenSimAddLibrary(
     )
 
 if (OPENSIM_WITH_CASADI)
-    target_link_libraries(osimMoco PRIVATE casadi)
+    if (OPENSIM_CASADI_STATIC)
+        get_target_property(casadi_type casadi TYPE)
+        if (NOT casadi_type STREQUAL "STATIC_LIBRARY")
+            message(FATAL_ERROR "OPENSIM_CASADI_STATIC requires a CasADi built "
+                    "with ENABLE_STATIC=ON and ENABLE_SHARED=OFF; the CasADi "
+                    "found at ${casadi_DIR} is a ${casadi_type}.")
+        endif()
+        # CasADi's plugins are archives rather than shared libraries in a static
+        # build, so link the Ipopt plugin explicitly; osimMoco registers it at
+        # runtime (see CasOCTranscription.cpp). Search only alongside the CasADi
+        # we actually found, and only for a static archive: the dependencies
+        # directory is on CMAKE_PREFIX_PATH and may hold a shared CasADi whose
+        # plugins would pull a second CasADi back into the process.
+        get_filename_component(casadi_lib_dir "${casadi_DIR}/../.." ABSOLUTE)
+        set(casadi_saved_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+        find_library(CASADI_NLPSOL_IPOPT_LIBRARY casadi_nlpsol_ipopt
+                PATHS "${casadi_lib_dir}" NO_DEFAULT_PATH)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ${casadi_saved_suffixes})
+        if (NOT CASADI_NLPSOL_IPOPT_LIBRARY)
+            message(FATAL_ERROR "OPENSIM_CASADI_STATIC requires CasADi's static "
+                    "Ipopt plugin (casadi_nlpsol_ipopt) in ${casadi_lib_dir}.")
+        endif()
+        # We bypass the imported CasADi target when linking so that we can hide
+        # its symbols, so its usage requirements must be applied by hand.
+        get_target_property(casadi_include_dirs casadi
+                INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(osimMoco SYSTEM PRIVATE
+                ${casadi_include_dirs})
+        get_target_property(casadi_compile_defs casadi
+                INTERFACE_COMPILE_DEFINITIONS)
+        if (casadi_compile_defs)
+            target_compile_definitions(osimMoco PRIVATE ${casadi_compile_defs})
+        endif()
+        if (APPLE)
+            set(casadi_link
+                    "-Wl,-load_hidden,${CASADI_NLPSOL_IPOPT_LIBRARY}"
+                    "-Wl,-load_hidden,$<TARGET_FILE:casadi>")
+        elseif (MSVC)
+            # Symbols are exported only via __declspec(dllexport) on Windows,
+            # so a static CasADi leaks nothing into osimMoco's export table.
+            set(casadi_link "${CASADI_NLPSOL_IPOPT_LIBRARY}" casadi)
+        else()
+            # Untested; --exclude-libs takes archive names, not paths.
+            set(casadi_link "${CASADI_NLPSOL_IPOPT_LIBRARY}" casadi
+                    "-Wl,--exclude-libs,libcasadi_nlpsol_ipopt.a"
+                    "-Wl,--exclude-libs,libcasadi.a")
+        endif()
+        target_link_libraries(osimMoco PRIVATE ${casadi_link})
+        # Ipopt stays a shared dependency; it exports no coalescable symbols.
+        if (TARGET PkgConfig::IPOPT)
+            target_link_libraries(osimMoco PRIVATE PkgConfig::IPOPT)
+        endif()
+        target_compile_definitions(osimMoco PRIVATE
+                OPENSIM_CASADI_STATIC_PLUGINS)
+    else()
+        target_link_libraries(osimMoco PRIVATE casadi)
+    endif()
 endif()
 
 target_include_directories(osimMoco INTERFACE

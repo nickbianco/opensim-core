@@ -76,6 +76,7 @@ if(UNIX AND OPENSIM_COPY_DEPENDENCIES AND OPENSIM_WITH_CASADI)
     # Variables are not forwarded to the install script, so add a line
     # to set the OPENSIM_WITH_CASADI variable during the install step.
     install(CODE "set(OPENSIM_WITH_CASADI \"${OPENSIM_WITH_CASADI}\")")
+    install(CODE "set(OPENSIM_CASADI_STATIC \"${OPENSIM_CASADI_STATIC}\")")
     install(SCRIPT "${script}")
 
 endif()

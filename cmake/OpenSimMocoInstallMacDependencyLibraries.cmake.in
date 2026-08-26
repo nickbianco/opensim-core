@@ -55,20 +55,30 @@ endmacro()
 
 
 if (OPENSIM_WITH_CASADI)
-    install_name_tool_add_rpath(casadi.3.7)
-    install_name_tool_delete_rpath(casadi.3.7 "@CASADI_LIBDIR@")
-    install_name_tool_delete_rpath(casadi_nlpsol_ipopt.3.7 "@CASADI_LIBDIR@")
+    # A statically linked CasADi lives inside libosimMoco; only the Ipopt
+    # libraries below are installed as separate shared libraries.
+    if (NOT OPENSIM_CASADI_STATIC)
+        install_name_tool_add_rpath(casadi.3.7)
+        install_name_tool_delete_rpath(casadi.3.7 "@CASADI_LIBDIR@")
+        install_name_tool_delete_rpath(casadi_nlpsol_ipopt.3.7 "@CASADI_LIBDIR@")
+    endif()
 
     install_name_tool_add_rpath(ipopt.3)
     install_name_tool_add_rpath(coinmumps.3)
     install_name_tool_change(ipopt.3 coinmumps.3 "@IPOPT_LIBDIR@")
 
-    install_name_tool_change(casadi_nlpsol_ipopt.3.7 ipopt.3 "@IPOPT_LIBDIR@")
-    install_name_tool_change(casadi_nlpsol_ipopt.3.7 coinmumps.3 "@IPOPT_LIBDIR@")
-    install_name_tool_change(casadi_nlpsol_ipopt.3.7 metis "@IPOPT_LIBDIR@")
-    install_name_tool_change_gfortran(casadi_nlpsol_ipopt.3.7)
-    install_name_tool_change_quadmath(casadi_nlpsol_ipopt.3.7)
-    install_name_tool_add_rpath(casadi_nlpsol_ipopt.3.7)
+    if (NOT OPENSIM_CASADI_STATIC)
+        install_name_tool_change(casadi_nlpsol_ipopt.3.7 ipopt.3 "@IPOPT_LIBDIR@")
+        install_name_tool_change(casadi_nlpsol_ipopt.3.7 coinmumps.3 "@IPOPT_LIBDIR@")
+        install_name_tool_change(casadi_nlpsol_ipopt.3.7 metis "@IPOPT_LIBDIR@")
+        install_name_tool_change_gfortran(casadi_nlpsol_ipopt.3.7)
+        install_name_tool_change_quadmath(casadi_nlpsol_ipopt.3.7)
+        install_name_tool_add_rpath(casadi_nlpsol_ipopt.3.7)
+    else()
+        # TODO the gfortran/quadmath references that the Ipopt plugin carries in
+        # a shared CasADi build come in through libcoinmumps here; installing a
+        # static-CasADi build has not been exercised yet.
+    endif()
 
 endif()
 

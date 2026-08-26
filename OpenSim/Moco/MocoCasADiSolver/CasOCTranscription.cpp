@@ -17,10 +17,26 @@
  * -------------------------------------------------------------------------- */
 #include "CasOCTranscription.h"
 
+#include <mutex>
+
 using casadi::DM;
 using casadi::MX;
 using casadi::MXVector;
 using casadi::Slice;
+
+#ifdef OPENSIM_CASADI_STATIC_PLUGINS
+// A statically linked CasADi has no plugin shared libraries to discover, so its
+// dlopen-based plugin loading cannot find them (and is compiled out entirely
+// when CasADi is built with WITH_DL=OFF). Register the plugins we need
+// ourselves, using the entry point CasADi exposes for exactly this purpose.
+extern "C" void casadi_load_nlpsol_ipopt();
+namespace {
+void registerCasADiPlugins() {
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() { casadi_load_nlpsol_ipopt(); });
+}
+} // anonymous namespace
+#endif
 
 namespace CasOC {
 
@@ -1065,6 +1081,9 @@ Solution Transcription::solve(const Iterate& guessOrig) {
         jacobian.sparsity().to_file(
                 prefix + "constraint_Jacobian_sparsity.mtx");
     }
+#ifdef OPENSIM_CASADI_STATIC_PLUGINS
+    registerCasADiPlugins();
+#endif
     const casadi::Function nlpFunc =
             casadi::nlpsol("nlp", m_solver.getOptimSolver(), nlp, options);
 

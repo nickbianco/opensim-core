@@ -207,6 +207,16 @@ option(OPENSIM_WITH_CASADI
 add_feature_info(WITH_CASADI OPENSIM_WITH_CASADI
         "Build CasADi support for Moco (OPENSIM_WITH_CASADI)")
 
+# Linking CasADi's static libraries into osimMoco with hidden symbols prevents
+# a different CasADi loaded into the same process (for example by the casadi
+# PyPI package) from binding to, or coalescing with, OpenSim's copy. Requires
+# CasADi to be built with ENABLE_STATIC=ON and ENABLE_SHARED=OFF.
+option(OPENSIM_CASADI_STATIC
+        "Link CasADi's static libraries into osimMoco with hidden symbols." OFF)
+mark_as_advanced(OPENSIM_CASADI_STATIC)
+add_feature_info(CASADI_STATIC OPENSIM_CASADI_STATIC
+        "Link CasADi statically with hidden symbols (OPENSIM_CASADI_STATIC)")
+
 # Configure installation directories across platforms.
 # ----------------------------------------------------
 
@@ -657,9 +667,10 @@ if(OPENSIM_WITH_CASADI)
     # Copy CasADi into our installation.
     OpenSimCopyDependencyDLLsForWin(DEP_NAME casadi
             DEP_BIN_DIR "${CASADI_BIN_DIR}")
-    if(OPENSIM_COPY_DEPENDENCIES AND NOT WIN32)
+    if(OPENSIM_COPY_DEPENDENCIES AND NOT WIN32 AND NOT OPENSIM_CASADI_STATIC)
         # OpenSimCopyDependencyDLLsForWin() only copies DLLs for Windows, but 
         # we still need the CasADi shared libraries on other platforms.
+        # A statically linked CasADi is inside osimMoco; nothing to copy.
         install(DIRECTORY "${CASADI_CMAKE_DIR}/../../../"
             DESTINATION "${CMAKE_INSTALL_PREFIX}/${OPENSIM_INSTALL_CASADIDIR}"
                 USE_SOURCE_PERMISSIONS)
