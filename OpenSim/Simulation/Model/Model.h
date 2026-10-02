@@ -995,6 +995,47 @@ public:
             const SimTK::Vector_<SimTK::SpatialVec>& F_GAo,
             SimTK::Vector& f) const;
 
+    //--------------------------------------------------------------------------
+    // MOBILIZER FRAMES
+    //--------------------------------------------------------------------------
+    /** Set the inboard (X_PF) mobilizer frame of each listed mobilized body.
+    `rotations` supplies one rotation per body and `translations` holds the
+    translations packed as x, y, z per body, so `rotations` must be the same size
+    as `mobodIndexes` and `translations` three times that size.
+
+    This exists to set many frames in one call. Setting them one at a time from a
+    scripting language costs several language crossings per body, which dominates
+    the work being done.
+
+    The rotations are supplied rather than read back from the State on purpose. A
+    mobilizer frame is an Instance-stage variable, so reading one requires the
+    State realized to Stage::Instance while setting one invalidates that stage;
+    a version that preserved rotations by reading them had to re-realize Instance
+    on every call, which cost about thirty microseconds and far outweighed the
+    crossings it saved. Callers that want the rotations left alone typically
+    already hold them, since they are fixed, and can pass the same `rotations`
+    array on every call.
+
+    Invalidates Stage::Instance and higher.
+
+    `rotations` is spelled Array_<Rotation_<double>> rather than
+    Array_<Rotation>. SWIG matches template arguments textually and does not
+    resolve the Rotation typedef, so the parameter has to be spelled exactly as
+    simbody.i instantiates the array or the Python bindings reject it. **/
+    void setInboardFrames(
+            SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+            const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+            const SimTK::Vector& translations) const;
+
+    /** Set the outboard (X_BM) mobilizer frame of each listed mobilized body.
+    See setInboardFrames() for the packing and the rationale. **/
+    void setOutboardFrames(
+            SimTK::State& state,
+            const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+            const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+            const SimTK::Vector& translations) const;
+
     void multiplyByPositionJacobianWrtInboardFramePositions(
             const SimTK::State& state,
             const SimTK::Vector_<SimTK::Vec3>& dp_PF,

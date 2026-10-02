@@ -2412,6 +2412,64 @@ void Model::multiplyByPositionJacobianWrtOutboardFramePositions(
             state, dp_BM, dp_GB);
 }
 
+namespace {
+/* Shared body of setInboardFrames() and setOutboardFrames(). `setFrame` selects
+which of the two mobilizer frames is written. No frame is read, so the State
+needs no realized stage and nothing has to be re-realized afterwards. */
+template <typename SetFrame>
+void setMobilizerFrames(const OpenSim::Model& model, SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations, SetFrame setFrame) {
+    const int numBodies = (int)mobodIndexes.size();
+    const SimTK::SimbodyMatterSubsystem& matter = model.getMatterSubsystem();
+    for (int i = 0; i < numBodies; ++i) {
+        const SimTK::Transform X(rotations[i],
+                SimTK::Vec3(translations[3 * i], translations[3 * i + 1],
+                            translations[3 * i + 2]));
+        setFrame(matter.getMobilizedBody(mobodIndexes[i]), state, X);
+    }
+}
+
+void checkMobilizerFrameSizes(
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations) {
+    OPENSIM_THROW_IF(rotations.size() != mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected one rotation per mobilized body.");
+    OPENSIM_THROW_IF(translations.size() != 3 * (int)mobodIndexes.size(),
+            OpenSim::Exception,
+            "Expected three translation entries per mobilized body.");
+}
+} // anonymous namespace
+
+void Model::setInboardFrames(
+        SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations) const {
+    checkMobilizerFrameSizes(mobodIndexes, rotations, translations);
+    setMobilizerFrames(*this, state, mobodIndexes, rotations, translations,
+            [](const SimTK::MobilizedBody& mobod, SimTK::State& s,
+                    const SimTK::Transform& X) {
+                mobod.setInboardFrame(s, X);
+            });
+}
+
+void Model::setOutboardFrames(
+        SimTK::State& state,
+        const SimTK::Array_<SimTK::MobilizedBodyIndex>& mobodIndexes,
+        const SimTK::Array_<SimTK::Rotation_<double>>& rotations,
+        const SimTK::Vector& translations) const {
+    checkMobilizerFrameSizes(mobodIndexes, rotations, translations);
+    setMobilizerFrames(*this, state, mobodIndexes, rotations, translations,
+            [](const SimTK::MobilizedBody& mobod, SimTK::State& s,
+                    const SimTK::Transform& X) {
+                mobod.setOutboardFrame(s, X);
+            });
+}
+
 void Model::multiplyByPositionJacobianWrtOutboardFramePositionsTranspose(
         const SimTK::State& state,
         const SimTK::Vector_<SimTK::Vec3>& dp_GB,

@@ -18,6 +18,104 @@ class TestBasics(unittest.TestCase):
     def test_version(self):
         print(osim.__version__)
 
+    def test_set_mobilizer_frame_translations(self):
+        # Setting many mobilizer frames at once must match setting them one at a
+        # time through the Joint interface.
+        import numpy as np
+
+        def build():
+            model = osim.Model()
+            previous = model.getGround()
+            for i in range(4):
+                body = osim.Body(f'b{i}', 1.0, osim.Vec3(0),
+                                 osim.Inertia(1, 1, 1, 0, 0, 0))
+                model.addBody(body)
+                joint = osim.PinJoint(f'j{i}', previous, osim.Vec3(0.1 * i, 0, 0),
+                                      osim.Vec3(0), body, osim.Vec3(0, -0.4, 0),
+                                      osim.Vec3(0))
+                model.addJoint(joint)
+                previous = body
+            model.finalizeConnections()
+            return model
+
+        rng = np.random.default_rng(0)
+        inboard = rng.uniform(-0.5, 0.5, (4, 3))
+        outboard = rng.uniform(-0.5, 0.5, (4, 3))
+
+        # Reference: one Joint at a time, preserving each frame's rotation.
+        reference = build()
+        state = reference.initSystem()
+        reference.realizePosition(state)
+        indexes = osim.SimTKArrayInt()
+        for i in range(reference.getNumJoints()):
+            joint = reference.getJointSet().get(i)
+            indexes.push_back(int(joint.getChildFrame().getMobilizedBodyIndex()))
+        for i in range(reference.getNumJoints()):
+            joint = reference.getJointSet().get(i)
+            X_PF = joint.getInboardFrame(state)
+            joint.setInboardFrame(state, osim.Transform(
+                X_PF.R(), osim.Vec3(*[float(v) for v in inboard[i]])))
+        reference.realizePosition(state)
+        for i in range(reference.getNumJoints()):
+            joint = reference.getJointSet().get(i)
+            X_BM = joint.getOutboardFrame(state)
+            joint.setOutboardFrame(state, osim.Transform(
+                X_BM.R(), osim.Vec3(*[float(v) for v in outboard[i]])))
+        reference.realizePosition(state)
+        expected = np.array(
+            [reference.getBodySet().get(i).getPositionInGround(state).to_numpy()
+             for i in range(reference.getNumBodies())])
+
+        # Bulk: two calls, each taking every frame at once. The rotations are
+        # supplied rather than read back, so they are captured from a pristine
+        # model before anything is modified.
+        model = build()
+        bulk_state = model.initSystem()
+        model.realizePosition(bulk_state)
+        inboard_rotations = osim.SimTKArrayRotation()
+        outboard_rotations = osim.SimTKArrayRotation()
+        for i in range(model.getNumJoints()):
+            joint = model.getJointSet().get(i)
+            inboard_rotations.push_back(
+                osim.Rotation(joint.getInboardFrame(bulk_state).R()))
+            outboard_rotations.push_back(
+                osim.Rotation(joint.getOutboardFrame(bulk_state).R()))
+        model.setInboardFrames(
+            bulk_state, indexes, inboard_rotations,
+            osim.Vector.createFromMat(inboard.flatten()))
+        model.setOutboardFrames(
+            bulk_state, indexes, outboard_rotations,
+            osim.Vector.createFromMat(outboard.flatten()))
+        model.realizePosition(bulk_state)
+        got = np.array(
+            [model.getBodySet().get(i).getPositionInGround(bulk_state).to_numpy()
+             for i in range(model.getNumBodies())])
+
+        assert np.array_equal(got, expected), f'{got} != {expected}'
+
+        # The call invalidates Stage::Instance but reads nothing, so calling it
+        # twice in a row from an unrealized State has to succeed.
+        model.setOutboardFrames(
+            bulk_state, indexes, outboard_rotations,
+            osim.Vector.createFromMat(outboard.flatten()))
+        model.setOutboardFrames(
+            bulk_state, indexes, outboard_rotations,
+            osim.Vector.createFromMat(outboard.flatten()))
+        model.realizePosition(bulk_state)
+        np.testing.assert_allclose(
+            np.array([model.getBodySet().get(i).getPositionInGround(
+                bulk_state).to_numpy() for i in range(model.getNumBodies())]),
+            expected, rtol=0, atol=0)
+
+        # Mismatched translation count, and mismatched rotation count.
+        with self.assertRaises(RuntimeError):
+            model.setInboardFrames(bulk_state, indexes, inboard_rotations,
+                                   osim.Vector.createFromMat(np.zeros(5)))
+        with self.assertRaises(RuntimeError):
+            model.setInboardFrames(bulk_state, indexes,
+                                   osim.SimTKArrayRotation(),
+                                   osim.Vector.createFromMat(inboard.flatten()))
+
     def test_muscle_helper_classes(self):
         # This test exists because some classes that Thelen2003Muscle used were
         # not accessibly in the bindings.
