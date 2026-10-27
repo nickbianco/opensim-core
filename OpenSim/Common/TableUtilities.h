@@ -185,6 +185,34 @@ public:
         return TimeSeriesTable_<T>(mergedTimes, mergedMatrix, labels);
     }
 
+    /// Find the elements of a table that are non-finite (NaN or infinite).
+    ///
+    /// The result holds the (column, row) index of each non-finite element,
+    /// ordered by column and then by row.
+    static std::vector<std::pair<int, int>> findNonFiniteElements(
+            const TimeSeriesTable& table);
+
+    /// Find the outlying elements of a table using the Hampel identifier.
+    ///
+    /// For each element, a window is centered on it spanning
+    /// `numAdjacentSamples` elements on either side, truncate at the ends of
+    /// the column. The element is reported as an outlier if it lies more than
+    /// `numStandardDeviations` estimated standard deviations from the median of
+    /// that window. The standard deviation is estimated from the window's
+    /// median absolute deviation (MAD), scaled by 1.4826 so that it is a
+    /// consistent estimator for normally distributed data.
+    ///
+    /// Both the median and the MAD are computed over the finite elements of
+    /// the window only. Any non-finite values are marked as outliers.
+    ///
+    /// @returns the (column, row) index of each outlying element, ordered by
+    ///          column and then by row.
+    /// @throws Exception if `numAdjacentSamples` is not positive or
+    ///         `numStandardDeviations` is negative.
+    static std::vector<std::pair<int, int>> hampel(
+            const TimeSeriesTable& table, int numAdjacentSamples = 3,
+            double numStandardDeviations = 3.0);
+
 private:
     static int findStateLabelIndexInternal(const std::string* begin,
             const std::string* end, const std::string& desired);
