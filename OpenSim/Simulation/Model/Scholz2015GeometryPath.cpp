@@ -24,12 +24,57 @@
 
 #include "Scholz2015GeometryPath.h"
 
+#include <OpenSim/Common/Constant.h>
 #include <OpenSim/Simulation/Model/ForceConsumer.h>
 #include <OpenSim/Simulation/SimbodyEngine/Coordinate.h>
 #include <OpenSim/Simulation/Model/Model.h>
 #include <OpenSim/Simulation/SimulationUtilities.h>
 
+#include <algorithm>
+
 using namespace OpenSim;
+
+namespace {
+
+// The location of a moving path point in the base frame B of its parent frame
+// F, X_BF * (x(q), y(q), z(q)), from the point's scalar location functions.
+class MovingPointFunction : public SimTK::Function_<SimTK::Vec3> {
+public:
+    MovingPointFunction(const SimTK::Transform& X_BF,
+            const Function& x, const Function& y, const Function& z) :
+            m_X_BF(X_BF),
+            m_x(x.createSimTKFunction()),
+            m_y(y.createSimTKFunction()),
+            m_z(z.createSimTKFunction()) {}
+
+    SimTK::Vec3 calcValue(const SimTK::Vector& q) const override {
+        return m_X_BF * SimTK::Vec3(m_x->calcValue(q), m_y->calcValue(q),
+                m_z->calcValue(q));
+    }
+
+    SimTK::Vec3 calcDerivative(const SimTK::Array_<int>& derivComponents,
+            const SimTK::Vector& q) const override {
+        return m_X_BF.R() * SimTK::Vec3(
+                m_x->calcDerivative(derivComponents, q),
+                m_y->calcDerivative(derivComponents, q),
+                m_z->calcDerivative(derivComponents, q));
+    }
+
+    int getArgumentSize() const override { return m_x->getArgumentSize(); }
+
+    int getMaxDerivativeOrder() const override {
+        return std::min({m_x->getMaxDerivativeOrder(),
+                m_y->getMaxDerivativeOrder(), m_z->getMaxDerivativeOrder()});
+    }
+
+private:
+    SimTK::Transform m_X_BF;
+    std::unique_ptr<SimTK::Function> m_x;
+    std::unique_ptr<SimTK::Function> m_y;
+    std::unique_ptr<SimTK::Function> m_z;
+};
+
+} // namespace
 
 //=============================================================================
 // SCHOLZ 2015 GEOMETRY PATH POINT
@@ -40,6 +85,63 @@ Scholz2015GeometryPathPoint::Scholz2015GeometryPathPoint() {
 
 const PathPoint& Scholz2015GeometryPathPoint::getPathPoint() const {
     return get_PathPoint();
+}
+
+const PhysicalFrame& Scholz2015GeometryPathPoint::getParentFrame() const {
+    return getPathPoint().getParentFrame();
+}
+
+SimTK::Vec3 Scholz2015GeometryPathPoint::calcLocation(
+        const SimTK::State& s) const {
+    return getPathPoint().getLocation(s);
+}
+
+//=============================================================================
+// SCHOLZ 2015 GEOMETRY PATH MOVING POINT
+//=============================================================================
+Scholz2015GeometryPathMovingPoint::Scholz2015GeometryPathMovingPoint() {
+    constructProperty_x_location(Constant(0.));
+    constructProperty_y_location(Constant(0.));
+    constructProperty_z_location(Constant(0.));
+}
+
+const PhysicalFrame& Scholz2015GeometryPathMovingPoint::getParentFrame() const {
+    return getConnectee<PhysicalFrame>("parent_frame");
+}
+
+std::vector<const Coordinate*>
+Scholz2015GeometryPathMovingPoint::getCoordinates() const {
+    std::vector<const Coordinate*> coordinates;
+    const auto& socket = getSocket<Coordinate>("coordinates");
+    for (unsigned i = 0; i < socket.getNumConnectees(); ++i) {
+        coordinates.push_back(&socket.getConnectee(i));
+    }
+    return coordinates;
+}
+
+SimTK::Vec3 Scholz2015GeometryPathMovingPoint::calcLocation(
+        const SimTK::State& s) const {
+    const std::vector<const Coordinate*> coordinates = getCoordinates();
+    SimTK::Vector q((int)coordinates.size());
+    for (int i = 0; i < (int)coordinates.size(); ++i) {
+        q[i] = coordinates[i]->getValue(s);
+    }
+    return SimTK::Vec3(get_x_location().calcValue(q),
+            get_y_location().calcValue(q), get_z_location().calcValue(q));
+}
+
+void Scholz2015GeometryPathMovingPoint::extendFinalizeFromProperties() {
+    Super::extendFinalizeFromProperties();
+    const int numCoordinates = (int)getSocket("coordinates").getNumConnectees();
+    for (const Function* function : {&get_x_location(), &get_y_location(),
+                 &get_z_location()}) {
+        OPENSIM_THROW_IF_FRMOBJ(
+                function->getArgumentSize() != numCoordinates, Exception,
+                "Expected the location functions to take one argument per "
+                "coordinate ({}), but function '{}' takes {}.",
+                numCoordinates, function->getName(),
+                function->getArgumentSize());
+    }
 }
 
 //=============================================================================
@@ -87,35 +189,62 @@ void Scholz2015GeometryPath::appendPathPoint(const PhysicalFrame& frame,
     finalizeFromProperties();
 }
 
-const PathPoint& Scholz2015GeometryPath::getOrigin() const {
+void Scholz2015GeometryPath::appendPathPoint(const PhysicalFrame& frame,
+        const Function& xLocation, const Function& yLocation,
+        const Function& zLocation,
+        const std::vector<std::string>& coordinatePaths) {
+
+    // Construct a new moving path point.
+    append_path_elements(Scholz2015GeometryPathMovingPoint());
+    auto& point = updElement<Scholz2015GeometryPathMovingPoint>(
+            getProperty_path_elements().size() - 1);
+    point.setName("path_point_" + std::to_string(getNumPathPoints() - 1));
+
+    // Set the frame, location functions, and coordinates.
+    point.connectSocket_parent_frame(frame);
+    point.set_x_location(xLocation);
+    point.set_y_location(yLocation);
+    point.set_z_location(zLocation);
+    for (const auto& path : coordinatePaths) {
+        point.updSocket("coordinates").appendConnecteePath(path);
+    }
+
+    // Call finalizeFromProperties() to ensure that the path point is recognized
+    // as a subcomponent.
+    finalizeFromProperties();
+}
+
+const Scholz2015GeometryPathAbstractPoint&
+Scholz2015GeometryPath::getOrigin() const {
     OPENSIM_THROW_IF_FRMOBJ(getNumPathPoints() == 0, Exception,
             "Tried retrieving the origin point, but the path contains no path "
             "points.");
 
-    const auto* point = tryGetElement<Scholz2015GeometryPathPoint>(0);
+    const auto* point = tryGetElement<Scholz2015GeometryPathAbstractPoint>(0);
     OPENSIM_THROW_IF_FRMOBJ(point == nullptr, Exception,
             "Tried retrieving the origin point, but the first element in the "
             "path is not a path point.");
 
-    return point->getPathPoint();
+    return *point;
 }
 
-const PathPoint& Scholz2015GeometryPath::getInsertion() const {
+const Scholz2015GeometryPathAbstractPoint&
+Scholz2015GeometryPath::getInsertion() const {
     OPENSIM_THROW_IF_FRMOBJ(getNumPathPoints() < 2, Exception,
             "Tried retrieving the insertion point, but the path contains less "
             "than two path points.");
 
-    const auto* point = tryGetElement<Scholz2015GeometryPathPoint>(
+    const auto* point = tryGetElement<Scholz2015GeometryPathAbstractPoint>(
             getProperty_path_elements().size() - 1);
     OPENSIM_THROW_IF_FRMOBJ(point == nullptr, Exception,
             "Tried retrieving the insertion point, but the last element in the "
             "path is not a path point.");
 
-    return point->getPathPoint();
+    return *point;
 }
 
-const PathPoint& Scholz2015GeometryPath::getPathPoint(
-        int pathPointIndex) const {
+const Scholz2015GeometryPathAbstractPoint&
+Scholz2015GeometryPath::getPathPoint(int pathPointIndex) const {
     OPENSIM_THROW_IF_FRMOBJ(
             pathPointIndex < 0 || pathPointIndex >= getNumPathPoints(),
             Exception,
@@ -124,9 +253,10 @@ const PathPoint& Scholz2015GeometryPath::getPathPoint(
 
     int count = 0;
     for (int i = 0; i < getNumPathElements(); ++i) {
-        if (const auto* point = tryGetElement<Scholz2015GeometryPathPoint>(i)) {
+        if (const auto* point =
+                    tryGetElement<Scholz2015GeometryPathAbstractPoint>(i)) {
             if (count == pathPointIndex) {
-                return point->getPathPoint();
+                return *point;
             }
             ++count;
         }
@@ -167,7 +297,7 @@ const SimTK::Vec3& Scholz2015GeometryPath::getContactHint(
 int Scholz2015GeometryPath::getNumPathPoints() const {
     int count = 0;
     for (int i = 0; i < getNumPathElements(); ++i) {
-        if (tryGetElement<Scholz2015GeometryPathPoint>(i) != nullptr) {
+        if (tryGetElement<Scholz2015GeometryPathAbstractPoint>(i) != nullptr) {
             ++count;
         }
     }
@@ -248,6 +378,24 @@ findIndependentCoordinates(const SimTK::State& s) const {
             }
         }
     }
+
+    // Moving path points also depend on the coordinates of their location
+    // functions.
+    for (int ielt = 0; ielt < getNumPathElements(); ++ielt) {
+        const auto* point =
+                tryGetElement<Scholz2015GeometryPathMovingPoint>(ielt);
+        if (!point) {
+            continue;
+        }
+        for (const Coordinate* coord : point->getCoordinates()) {
+            ComponentPath path(coord->getAbsolutePathString());
+            if (!coord->isConstrained(s) &&
+                    std::find(coordinates.begin(), coordinates.end(), path) ==
+                            coordinates.end()) {
+                coordinates.push_back(path);
+            }
+        }
+    }
     return coordinates;
 }
 
@@ -282,8 +430,8 @@ void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
     }
 
     const SimTK::CableSpan& cable = getCableSpan();
-    const PathPoint& origin = getOrigin();
-    const PathPoint& insertion = getInsertion();
+    const auto& origin = getOrigin();
+    const auto& insertion = getInsertion();
 
     // Force applied at path origin point.
     // CableSpan::calcOriginTangentDirection() returns the tangent direction of
@@ -291,7 +439,7 @@ void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
     // of the tension force.
     forceConsumer.consumePointForce(state,
             origin.getParentFrame(),
-            origin.getLocation(state),
+            origin.calcLocation(state),
             tension * cable.calcOriginTangentDirection(state));
 
 
@@ -343,10 +491,10 @@ void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
                 cable.calcViaPointOutgoingTangentDirection(state, ix);
 
         // Consume the forces applied at the via point.
-        const PathPoint& point =
-            getElement<Scholz2015GeometryPathPoint>(eltIx).getPathPoint();
+        const auto& point =
+                getElement<Scholz2015GeometryPathAbstractPoint>(eltIx);
         const auto& frame = point.getParentFrame();
-        const auto& location = point.getLocation(state);
+        const SimTK::Vec3 location = point.calcLocation(state);
         forceConsumer.consumePointForce(state, frame, location, tension * t_P);
         forceConsumer.consumePointForce(state, frame, location, tension * t_Q);
     }
@@ -357,8 +505,26 @@ void Scholz2015GeometryPath::produceForces(const SimTK::State& state,
     // in the opposite direction of the tension force.
     forceConsumer.consumePointForce(state,
             insertion.getParentFrame(),
-            insertion.getLocation(state),
+            insertion.calcLocation(state),
             -tension * cable.calcTerminationTangentDirection(state));
+
+    // Moving path points move relative to their frames, so the tension also
+    // does work through the coordinates they depend on.
+    if (!_movingPointCoordinates.empty()) {
+        const SimTK::SimbodyMatterSubsystem& matter =
+                getModel().getMatterSubsystem();
+        SimTK::Vector mobilityForces(state.getNU(), 0.);
+        cable.applyMobilityForces(state, tension, mobilityForces);
+        for (const Coordinate* coord : _movingPointCoordinates) {
+            // Coordinates in OpenSim have qdot = u.
+            const SimTK::UIndex ux(
+                    matter.getMobilizedBody(coord->getBodyIndex())
+                            .getFirstUIndex(state) +
+                    coord->getMobilizerQIndex());
+            forceConsumer.consumeGeneralizedForce(state, *coord,
+                    mobilityForces[ux]);
+        }
+    }
 }
 
 //=============================================================================
@@ -372,11 +538,11 @@ void Scholz2015GeometryPath::extendConnectToModel(Model& model) {
             "{} path point(s) were found. Use addPathPoint() to add a path "
             "point to the path.", getNumPathPoints());
     OPENSIM_THROW_IF_FRMOBJ(
-            tryGetElement<Scholz2015GeometryPathPoint>(0) == nullptr,
+            tryGetElement<Scholz2015GeometryPathAbstractPoint>(0) == nullptr,
             Exception, "Expected the first element of the path to be a path "
             "point, but it is an obstacle.");
     OPENSIM_THROW_IF_FRMOBJ(
-            tryGetElement<Scholz2015GeometryPathPoint>(
+            tryGetElement<Scholz2015GeometryPathAbstractPoint>(
                     getNumPathElements() - 1) == nullptr,
             Exception, "Expected the last element of the path to be a path "
             "point, but it is an obstacle.");
@@ -391,15 +557,59 @@ void Scholz2015GeometryPath::extendAddToSystem(
     // obstacles to the list of indexes multiple times.
     _viaPointIndexes.clear();
     _obstacleIndexes.clear();
+    _movingPointCoordinates.clear();
 
-    const PathPoint& origin = getOrigin();
-    const PathPoint& insertion = getInsertion();
+    // Moving path points: the location function in the mobilized body frame
+    // and the mobilized body and mobilizer q index of each coordinate.
+    struct MovingStation {
+        std::shared_ptr<const SimTK::Function_<SimTK::Vec3>> function;
+        SimTK::Array_<SimTK::MobilizedBodyIndex> coordBodies;
+        SimTK::Array_<SimTK::MobilizerQIndex> coordIndices;
+    };
+    auto createMovingStation =
+            [&](const Scholz2015GeometryPathMovingPoint& point) {
+        MovingStation station;
+        station.function = std::make_shared<MovingPointFunction>(
+                point.getParentFrame().findTransformInBaseFrame(),
+                point.get_x_location(), point.get_y_location(),
+                point.get_z_location());
+        for (const Coordinate* coord : point.getCoordinates()) {
+            station.coordBodies.push_back(coord->getBodyIndex());
+            station.coordIndices.push_back(coord->getMobilizerQIndex());
+            if (std::find(_movingPointCoordinates.begin(),
+                        _movingPointCoordinates.end(), coord) ==
+                    _movingPointCoordinates.end()) {
+                _movingPointCoordinates.push_back(coord);
+            }
+        }
+        return station;
+    };
+
+    // The station of a fixed origin or insertion; moving ones are set below.
+    auto fixedStation = [&](int index) {
+        const auto* point = tryGetElement<Scholz2015GeometryPathPoint>(index);
+        return point ? point->getPathPoint().get_location() : SimTK::Vec3(0);
+    };
+    const int insertionIx = getNumPathElements() - 1;
     SimTK::CableSubsystem& cables = system.updCableSubsystem();
     SimTK::CableSpan cable(cables,
-        origin.getParentFrame().getMobilizedBodyIndex(),
-        origin.get_location(),
-        insertion.getParentFrame().getMobilizedBodyIndex(),
-        insertion.get_location());
+        getOrigin().getParentFrame().getMobilizedBodyIndex(),
+        fixedStation(0),
+        getInsertion().getParentFrame().getMobilizedBodyIndex(),
+        fixedStation(insertionIx));
+
+    if (const auto* point =
+                tryGetElement<Scholz2015GeometryPathMovingPoint>(0)) {
+        MovingStation station = createMovingStation(*point);
+        cable.setOriginStation(station.function, station.coordBodies,
+                station.coordIndices);
+    }
+    if (const auto* point =
+                tryGetElement<Scholz2015GeometryPathMovingPoint>(insertionIx)) {
+        MovingStation station = createMovingStation(*point);
+        cable.setTerminationStation(station.function, station.coordBodies,
+                station.coordIndices);
+    }
 
     for (int ielt = 1; ielt < getProperty_path_elements().size() - 1; ++ielt) {
         if (const auto* point =
@@ -407,6 +617,13 @@ void Scholz2015GeometryPath::extendAddToSystem(
             SimTK::CableSpanViaPointIndex ix = cable.addViaPoint(
                 point->getPathPoint().getParentFrame().getMobilizedBodyIndex(),
                 point->getPathPoint().get_location());
+            _viaPointIndexes.emplace_back(std::make_pair(ix, ielt));
+        } else if (const auto* point =
+                    tryGetElement<Scholz2015GeometryPathMovingPoint>(ielt)) {
+            MovingStation station = createMovingStation(*point);
+            SimTK::CableSpanViaPointIndex ix = cable.addViaPoint(
+                point->getParentFrame().getMobilizedBodyIndex(),
+                station.function, station.coordBodies, station.coordIndices);
             _viaPointIndexes.emplace_back(std::make_pair(ix, ielt));
         } else if (const auto* obstacle =
                     tryGetElement<Scholz2015GeometryPathObstacle>(ielt)) {

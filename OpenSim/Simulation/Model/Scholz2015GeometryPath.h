@@ -26,6 +26,9 @@
 
 #include <OpenSim/Simulation/Model/AbstractGeometryPath.h>
 
+#include <OpenSim/Common/Function.h>
+#include <OpenSim/Simulation/SimbodyEngine/Coordinate.h>
+
 #include <OpenSim/Simulation/Model/ContactGeometry.h>
 #include <OpenSim/Simulation/Model/PathPoint.h>
 #include <OpenSim/Simulation/MomentArmSolver.h>
@@ -42,12 +45,40 @@ namespace OpenSim {
  * `Scholz2015GeometryPath` are stored as an ordered list in the `path_elements`
  * property.
  *
- * @see Scholz2015GeometryPathPoint
+ * @see Scholz2015GeometryPathAbstractPoint
  * @see Scholz2015GeometryPathObstacle
  * @see Scholz2015GeometryPath
  */
 class OSIMSIMULATION_API Scholz2015GeometryPathElement : public Component {
 OpenSim_DECLARE_ABSTRACT_OBJECT(Scholz2015GeometryPathElement, Component);
+};
+
+/**
+ * \section Scholz2015GeometryPathAbstractPoint
+ * An abstract class representing a point in a `Scholz2015GeometryPath`, which
+ * the path must pass through.
+ *
+ * Concrete implementations of this class define the location of the point in
+ * a `PhysicalFrame`, which may be fixed or depend on the state.
+ *
+ * @see Scholz2015GeometryPathPoint
+ * @see Scholz2015GeometryPathMovingPoint
+ * @see Scholz2015GeometryPath
+ */
+class OSIMSIMULATION_API Scholz2015GeometryPathAbstractPoint :
+        public Scholz2015GeometryPathElement {
+OpenSim_DECLARE_ABSTRACT_OBJECT(Scholz2015GeometryPathAbstractPoint,
+        Scholz2015GeometryPathElement);
+public:
+    /**
+     * Get the frame in which the point's location is defined.
+     */
+    virtual const PhysicalFrame& getParentFrame() const = 0;
+
+    /**
+     * Calculate the location of the point in the parent frame.
+     */
+    virtual SimTK::Vec3 calcLocation(const SimTK::State& s) const = 0;
 };
 
 /**
@@ -62,9 +93,9 @@ OpenSim_DECLARE_ABSTRACT_OBJECT(Scholz2015GeometryPathElement, Component);
  * @see Scholz2015GeometryPath
  */
 class OSIMSIMULATION_API Scholz2015GeometryPathPoint :
-        public Scholz2015GeometryPathElement {
+        public Scholz2015GeometryPathAbstractPoint {
 OpenSim_DECLARE_CONCRETE_OBJECT(Scholz2015GeometryPathPoint,
-        Scholz2015GeometryPathElement);
+        Scholz2015GeometryPathAbstractPoint);
 public:
 //=============================================================================
 // SOCKETS
@@ -83,6 +114,73 @@ public:
      * Get the underlying `PathPoint`.
      */
     const PathPoint& getPathPoint() const;
+
+    const PhysicalFrame& getParentFrame() const override;
+    SimTK::Vec3 calcLocation(const SimTK::State& s) const override;
+};
+
+/**
+ * \section Scholz2015GeometryPathMovingPoint
+ * A class representing a moving point in a `Scholz2015GeometryPath`.
+ *
+ * The location of the point in a `PhysicalFrame` is a function of a set of
+ * generalized coordinates, with components given by the properties
+ * `x_location`, `y_location`, and `z_location`. The arguments of the functions
+ * are the coordinates connected to the `coordinates` socket, in order. The
+ * functions must support first derivatives, which the path uses for its
+ * lengthening speed and for the generalized forces it applies through the
+ * coordinates.
+ *
+ * Users should not create instances of this class directly. Instead, use the
+ * `appendPathPoint()` methods of `Scholz2015GeometryPath` to append path
+ * points.
+ *
+ * @see Scholz2015GeometryPath
+ */
+class OSIMSIMULATION_API Scholz2015GeometryPathMovingPoint :
+        public Scholz2015GeometryPathAbstractPoint {
+OpenSim_DECLARE_CONCRETE_OBJECT(Scholz2015GeometryPathMovingPoint,
+        Scholz2015GeometryPathAbstractPoint);
+public:
+//=============================================================================
+// PROPERTIES
+//=============================================================================
+    OpenSim_DECLARE_PROPERTY(x_location, Function,
+            "The x-component of the point's location in the parent frame as a "
+            "function of the connected coordinates.");
+    OpenSim_DECLARE_PROPERTY(y_location, Function,
+            "The y-component of the point's location in the parent frame as a "
+            "function of the connected coordinates.");
+    OpenSim_DECLARE_PROPERTY(z_location, Function,
+            "The z-component of the point's location in the parent frame as a "
+            "function of the connected coordinates.");
+
+//=============================================================================
+// SOCKETS
+//=============================================================================
+    OpenSim_DECLARE_SOCKET(parent_frame, PhysicalFrame,
+            "The frame in which the point's location is defined.");
+    OpenSim_DECLARE_LIST_SOCKET(coordinates, Coordinate,
+            "The coordinates that are the arguments of the location functions, "
+            "in order.");
+
+//=============================================================================
+// METHODS
+//=============================================================================
+    // CONSTRUCTOR(S)
+    Scholz2015GeometryPathMovingPoint();
+
+    // ACCESSOR(S)
+    /**
+     * Get the coordinates that the location functions depend on, in order.
+     */
+    std::vector<const Coordinate*> getCoordinates() const;
+
+    const PhysicalFrame& getParentFrame() const override;
+    SimTK::Vec3 calcLocation(const SimTK::State& s) const override;
+
+protected:
+    void extendFinalizeFromProperties() override;
 };
 
 /**
@@ -348,17 +446,31 @@ public:
             const SimTK::Vec3& location);
 
     /**
-     * Get the origin `PathPoint` of the path (i.e., the first path point).
+     * Append a moving path point to the path, whose location in `frame` is a
+     * function of the coordinates at `coordinatePaths` (in order), with
+     * components given by `xLocation`, `yLocation`, and `zLocation`. The
+     * functions must take one argument per coordinate and support first
+     * derivatives.
+     *
+     * @see Scholz2015GeometryPathMovingPoint
      */
-    const PathPoint& getOrigin() const;
+    void appendPathPoint(const PhysicalFrame& frame,
+            const Function& xLocation, const Function& yLocation,
+            const Function& zLocation,
+            const std::vector<std::string>& coordinatePaths);
 
     /**
-     * Get the insertion `PathPoint` of the path (i.e., the last path point).
+     * Get the origin point of the path (i.e., the first path point).
      */
-    const PathPoint& getInsertion() const;
+    const Scholz2015GeometryPathAbstractPoint& getOrigin() const;
 
     /**
-     * Get the `PathPoint` at the specified index.
+     * Get the insertion point of the path (i.e., the last path point).
+     */
+    const Scholz2015GeometryPathAbstractPoint& getInsertion() const;
+
+    /**
+     * Get the path point at the specified index.
      *
      * The argument `pathPointIndex` is the index to the list of path points in
      * the path, not all path elements (e.g., obstacles). For example, if the
@@ -368,7 +480,8 @@ public:
      * @note Avoid repeated calls to this method in performance-critical
      * code, as it may involve searching through the path elements.
      */
-    const PathPoint& getPathPoint(int pathPointIndex) const;
+    const Scholz2015GeometryPathAbstractPoint& getPathPoint(
+            int pathPointIndex) const;
 
     /**
      * Add an obstacle to the path.
@@ -570,6 +683,9 @@ private:
     using ViaPointIndexes = std::vector<std::pair<
             SimTK::CableSpanViaPointIndex, int>>;
     mutable SimTK::ResetOnCopy<ViaPointIndexes> _viaPointIndexes;
+    // The coordinates that moving path points depend on, without duplicates.
+    using Coordinates = std::vector<const Coordinate*>;
+    mutable SimTK::ResetOnCopy<Coordinates> _movingPointCoordinates;
 
     SimTK::ResetOnCopy<std::unique_ptr<MomentArmSolver> > _maSolver;
 };

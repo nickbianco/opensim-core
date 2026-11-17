@@ -12,6 +12,9 @@ OpenSimAddTest(NAME testGeometryPathWrapping
 OpenSimAddTest(NAME testScholz2015GeometryPath
         LINKLIBS osimTools)
 
+OpenSimAddTest(NAME testScholz2015GeometryPathMovingPoints
+        LINKLIBS osimTools)
+
 OpenSimAddTest(NAME testWrapCylinder
         LINKLIBS osimTools)
 

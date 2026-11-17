@@ -205,6 +205,7 @@ OSIMSIMULATION_API void RegisterTypes_osimSimulation()
     Object::registerType( FunctionBasedPath());
     Object::registerType( Scholz2015GeometryPathObstacle());
     Object::registerType( Scholz2015GeometryPathPoint());
+    Object::registerType( Scholz2015GeometryPathMovingPoint());
     Object::registerType( Scholz2015GeometryPath());
 
     Object::registerType( ControlSet() );
